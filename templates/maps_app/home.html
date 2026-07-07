@@ -1,24 +1,39 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <title>Maps Home</title>
+    
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
-    <style>
-        #map {
-            width: 100%;
-            height: 100vh;
-        }
-    </style>
+        <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+
+    <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
 </head>
 
 <body>
 
-    <h2>OpenStreetMap with Leaflet</h2>
+    <header>
+            <h1>🌍 Maps Explorer</h1>
+            <p>Search any location and explore it on the map.</p>
+        </header>
+    <div class="search-box">
+            <form method="post">
+                {% csrf_token %}
+                {{ form }}
+                <button type="submit">Search</button>
+            </form>
+        </div>
 
     <div id="map"></div>
 
@@ -31,30 +46,203 @@
 <!--leaflet JS-->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
 <script>
-   const lat = {{ data.latitude }};
-const lng = {{ data.longitude }};
-const zoom = {{ data.zoom }};
+    const lat = {{ data.latitude }};
+    const lng = {{ data.longitude }};
+    const zoom = {{ data.zoom }};
 
 // Create the map
-const map = L.map('map').setView([lat, lng], zoom);
+    const map = L.map('map').setView([lat, lng], zoom);
 
 // Add OpenStreetMap tiles
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
-}).addTo(map);
+})
+osm.addTo(map);
 
-// Add a marker
-L.marker([lat, lng])
-    .addTo(map)
-    .bindPopup("Saudi Arabia")
-    .openPopup();
+// ====================================Add a marker===================================================
+
+var myIcon = L.icon({
+    iconUrl: '{% static 'images/pointer.png' %}',
+    iconSize: [38, 45],
+    });
+
+//L.marker([lat, lng])
+//    .addTo(map)
+//    .bindPopup("Saudi Arabia")
+//    .openPopup();
+var marker = L.marker([lat, lng],
+            {icon:myIcon,draggable:true}); // this is for custom marker
+
+    marker
+        .addTo(map)
+        .bindPopup("Saudi Arabia")
+        .openPopup();
+
+// Detect location when the marker is moved
+
+marker.on("dragend", function(e){
+    // just for understanding how to get latitude and lingitude
+ /*   var position = marker.getLatLng()
+    var latitude = position.lat;
+    var longitude = position.lng;
+
+    console.log(latitude,longitude);
+    console.log(); */
+
+    var position = marker.getLatLng();
+
+    fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.lat}&lon=${position.lng}`
+    ).then(response => response.json())
+     .then(data =>{
+        let place = data.address.city ||
+                    data.address.town ||
+                    data.address.village ||
+                    data.address.state ||
+                    "unknown Location";
+        marker.bindPopup(place).openPopup();
+     })
+});
 
 
-// filter on maps
+//var popup = marker.bindPopup('saudia').openPopup();
+ //   popup.addTo(map)
+
+
+// =============================filter on maps===================================
+// first
 var filter = L.tileLayer('https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png', {
 	maxZoom: 18,
 	attribution: 'Map <a href="https://memomaps.de/">memomaps.de</a> <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+})
+ // filter.addTo(map);
+
+// second
+var CartoDB_DarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+	subdomains: 'abcd',
+	maxZoom: 20
 });
-    filter.addTo(map);
+   // CartoDB_DarkMatter.addTo(map)
+
+// third
+var GeoportailFrance_plan = L.tileLayer('https://data.geopf.fr/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE={style}&TILEMATRIXSET=PM&FORMAT={format}&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}', {
+	attribution: '<a target="_blank" href="https://www.geoportail.gouv.fr/">Geoportail France</a>',
+	bounds: [[-75, -180], [81, 180]],
+	minZoom: 2,
+	maxZoom: 18,
+	format: 'image/png',
+	style: 'normal'
+});
+
+// fourth
+googleStreets = L.tileLayer('http://{s}.google.com/vt?lyrs=m&x={x}&y={y}&z={z}',{
+    maxZoom: 20,
+    subdomains:['mt0','mt1','mt2','mt3']
+});
+    googleStreets.addTo(map)
+
+googleSat = L.tileLayer('http://{s}.google.com/vt?lyrs=s&x={x}&y={y}&z={z}',{
+    maxZoom: 20,
+    subdomains:['mt0','mt1','mt2','mt3']
+});
+
+
+//====================Layer and Layer Group on maps (we can also say layer controler)
+var baseMaps = {
+    "OpenStreetMap": osm,
+    "Google Street": googleStreets,
+    "Google Statelite":googleSat,
+    "GeoportailFrance plan":GeoportailFrance_plan
+};
+
+// This is for marker (like pointer on maps)
+var overlayMaps = {
+    "marker": marker
+};
+
+// this is adding layers to our map
+var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+
+
+
+
+//this is for clustring
+
+var markers = L.markerClusterGroup();
+
+var locations = [
+    [24.38,46.43],
+    [24.39,46.44],
+    [24.40,46.45],
+    [24.42,46.47],
+    [24.45,46.50],
+    [24.47,46.52],
+    [24.49,46.54],
+    [24.40,46.57],
+    [24.42,46.63],
+    [24.45,46.65],
+    [24.47,46.60],
+];
+
+locations.forEach(function(location){
+
+    var marker = L.marker(location,{
+        icon:myIcon
+    });
+
+    marker.bindPopup("Marker");
+
+    markers.addLayer(marker);
+
+});
+
+map.addLayer(markers);
+
+
+// this is for 
+var points = [];
+
+var polygon = null;
+
+map.on("click", function (e) {
+
+    points.push([e.latlng.lat, e.latlng.lng]);
+
+    if (polygon) {
+        map.removeLayer(polygon);
+    }
+
+    polygon = L.polygon(points).addTo(map);
+
+    // Close after 4 points
+    if (points.length === 4) {
+        map.off("click");   // Stop adding more points
+    }
+});
+
+
+
+var drawnItems = new L.FeatureGroup();
+map.addLayer(drawnItems);
+
+var drawControl = new L.Control.Draw({
+    edit: {
+        featureGroup: drawnItems
+    }
+});
+
+map.addControl(drawControl);
+
+map.on(L.Draw.Event.CREATED, function (e) {
+    drawnItems.addLayer(e.layer);
+});
+
 </script>
+
+
