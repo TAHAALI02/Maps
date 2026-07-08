@@ -1,0 +1,7 @@
+{% extends "accounts/base.html" %}
+{% block title %}Signup Successful{% endblock %}
+{% block content %}
+<h2>Account Created</h2>
+<p>Your account has been created successfully. You can now log in.</p>
+<button type="submit" class="auth-submit" onclick="window.location.href='{% url "login" %}'" >Log in</button>
+{% endblock %}

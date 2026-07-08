@@ -1,0 +1,281 @@
+{% extends "accounts/base.html" %}
+{% block title %}Sign Up — Maps{% endblock %}
+
+{% block brand_eyebrow %}Get started{% endblock %}
+{% block brand_headline %}Your map,<br>set up in a minute.{% endblock %}
+{% block brand_sub %}
+Create an account to start pinning, sharing, and finding your way — free, no credit card needed.
+{% endblock %}
+
+{% block content %}
+
+
+
+<h2 class="auth-title">Create your account</h2>
+<p class="auth-subtitle">Takes less than a minute.</p>
+
+<form method="post" id="user-signup-form" novalidate>
+    {% csrf_token %}
+
+    <div class="field-row">
+        <div class="field">
+            <label for="{{ form.first_name.id_for_label }}">First name</label>
+            {{ form.first_name }}
+            {{ form.first_name.errors }}
+        </div>
+
+        <div class="field">
+            <label for="{{ form.last_name.id_for_label }}">Last name</label>
+            {{ form.last_name }}
+            {{ form.last_name.errors }}
+        </div>
+    </div>
+
+    <div class="field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+        <div id="username-status" class="username-status"></div>
+        {{ form.username.errors }}
+    </div>
+
+    <div class="field">
+        <label for="{{ form.email.id_for_label }}">Email</label>
+        {{ form.email }}
+        {{ form.email.errors }}
+    </div>
+
+    <div class="field">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        {{ form.password }}
+        <div id="password-status" class="password-status"></div>
+        {{ form.password.errors }}
+    </div>
+
+    <div class="field">
+        <label for="{{ form.confirm_password.id_for_label }}">
+            Confirm password
+        </label>
+        {{ form.confirm_password }}
+        <div id="confirm-password-status" class="password-status"></div>
+        {{ form.confirm_password.errors }}
+    </div>
+
+    <button type="submit" id="submit-btn" class="auth-submit">
+        Create account
+    </button>
+</form>
+
+<div class="auth-foot-link">
+    Already have an account?
+    <a href="{% url 'login' %}">Log in</a>
+</div>
+
+<script>
+(function () {
+
+    const form = document.getElementById("user-signup-form");
+
+    const usernameInput = document.getElementById("{{ form.username.id_for_label }}");
+    const passwordInput = document.getElementById("{{ form.password.id_for_label }}");
+    const confirmPasswordInput = document.getElementById("{{ form.confirm_password.id_for_label }}");
+
+    const usernameStatus = document.getElementById("username-status");
+    const passwordStatus = document.getElementById("password-status");
+    const confirmPasswordStatus = document.getElementById("confirm-password-status");
+
+    const submitBtn = document.getElementById("submit-btn");
+
+    let debounceTimer = null;
+    let usernameIsAvailable = null;
+
+    // Disable button initially
+    submitBtn.disabled = true;
+
+    // ==========================
+    // Enable / Disable Submit Button
+    // ==========================
+
+    function updateSubmitButton() {
+        submitBtn.disabled = !(
+            usernameIsAvailable === true &&
+            validatePassword(passwordInput.value) === "" &&
+            validateConfirmPassword()
+        );
+    }
+
+    // ==========================
+    // Username Availability
+    // ==========================
+
+    function checkUsername(username) {
+
+        if (username.length < 3) {
+            usernameStatus.textContent = "";
+            usernameStatus.className = "username-status";
+            usernameIsAvailable = null;
+            updateSubmitButton();
+            return;
+        }
+
+        usernameStatus.textContent = "Checking availability...";
+        usernameStatus.className = "username-status checking";
+
+        fetch(`/api/check-username/?username=${encodeURIComponent(username)}`)
+            .then(response => response.json())
+            .then(data => {
+
+                usernameIsAvailable = data.available;
+
+                usernameStatus.textContent = data.message;
+                usernameStatus.className =
+                    "username-status " +
+                    (data.available ? "available" : "taken");
+
+                updateSubmitButton();
+
+            })
+            .catch(() => {
+
+                usernameIsAvailable = false;
+
+                usernameStatus.textContent =
+                    "Unable to verify username. Please try again.";
+
+                usernameStatus.className = "username-status taken";
+
+                updateSubmitButton();
+            });
+    }
+
+    usernameInput.addEventListener("input", function () {
+
+        clearTimeout(debounceTimer);
+
+        usernameIsAvailable = null;
+        updateSubmitButton();
+
+        debounceTimer = setTimeout(() => {
+            checkUsername(this.value.trim());
+        }, 400);
+
+    });
+
+    // ==========================
+    // Password Validation
+    // ==========================
+
+    function validatePassword(password) {
+
+        if (password.length < 8 || password.length > 16) {
+            return "Password must be 8–16 characters.";
+        }
+
+        if (!/[A-Za-z]/.test(password)) {
+            return "Password must contain at least one letter.";
+        }
+
+        if (!/\d/.test(password)) {
+            return "Password must contain at least one number.";
+        }
+
+        if (!/[^\w\s]/.test(password)) {
+            return "Password must contain at least one special character.";
+        }
+
+        return "";
+    }
+
+    passwordInput.addEventListener("input", function () {
+
+        const error = validatePassword(this.value);
+
+        if (error) {
+            passwordStatus.textContent = error;
+            passwordStatus.className = "password-status invalid";
+        } else {
+            passwordStatus.textContent = "✓ Strong password";
+            passwordStatus.className = "password-status valid";
+        }
+
+        validateConfirmPassword();
+        updateSubmitButton();
+
+    });
+
+    // ==========================
+    // Confirm Password
+    // ==========================
+
+    function validateConfirmPassword() {
+
+        if (confirmPasswordInput.value === "") {
+            confirmPasswordStatus.textContent = "";
+            confirmPasswordStatus.className = "password-status";
+            return false;
+        }
+
+        if (passwordInput.value !== confirmPasswordInput.value) {
+            confirmPasswordStatus.textContent = "Passwords do not match.";
+            confirmPasswordStatus.className = "password-status invalid";
+            return false;
+        }
+
+        confirmPasswordStatus.textContent = "✓ Passwords match";
+        confirmPasswordStatus.className = "password-status valid";
+        return true;
+    }
+
+    confirmPasswordInput.addEventListener("input", function () {
+        validateConfirmPassword();
+        updateSubmitButton();
+    });
+
+    // ==========================
+    // Submit Validation
+    // ==========================
+
+    form.addEventListener("submit", function (e) {
+
+        if (submitBtn.disabled) {
+            e.preventDefault();
+            return;
+        }
+
+        if (usernameIsAvailable !== true) {
+
+            e.preventDefault();
+
+            usernameStatus.textContent =
+                "Please wait until the username has been verified.";
+
+            usernameStatus.className =
+                "username-status checking";
+
+            return;
+        }
+
+        const passwordError = validatePassword(passwordInput.value);
+
+        if (passwordError) {
+
+            e.preventDefault();
+
+            passwordStatus.textContent = passwordError;
+            passwordStatus.className = "password-status invalid";
+
+            passwordInput.focus();
+            return;
+        }
+
+        if (!validateConfirmPassword()) {
+
+            e.preventDefault();
+            confirmPasswordInput.focus();
+            return;
+        }
+
+    });
+
+})();
+</script>
+{% endblock %}

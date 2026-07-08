@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Already Exists</title>
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+    background:#f5f7fb;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.container{
+    width:1000px;
+    height:600px;
+    background:#fff;
+    border-radius:20px;
+    overflow:hidden;
+    display:flex;
+    box-shadow:0 20px 50px rgba(0,0,0,.15);
+}
+
+/* Left Section */
+
+.left{
+    width:50%;
+    background:linear-gradient(135deg,#4f46e5,#2d1db7);
+    color:#fff;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:50px;
+    text-align:center;
+    position:relative;
+}
+
+.left img{
+    width:220px;
+    margin-bottom:35px;
+}
+
+.left h1{
+    font-size:42px;
+    margin-bottom:15px;
+}
+
+.left p{
+    font-size:17px;
+    line-height:1.8;
+    opacity:.9;
+}
+
+/* Right Section */
+
+.right{
+    width:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#fff;
+}
+
+.card{
+    width:380px;
+    text-align:center;
+}
+
+.icon{
+    width:90px;
+    height:90px;
+    background:#fff3f3;
+    color:#dc3545;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:45px;
+    margin:auto;
+    margin-bottom:20px;
+}
+
+.card h2{
+    color:#222;
+    font-size:32px;
+    margin-bottom:15px;
+}
+
+.card p{
+    color:#666;
+    font-size:16px;
+    line-height:1.8;
+    margin-bottom:35px;
+}
+
+.btn{
+    display:inline-block;
+    padding:14px 35px;
+    background:#4f46e5;
+    color:#fff;
+    text-decoration:none;
+    border-radius:10px;
+    font-weight:600;
+    transition:.3s;
+}
+
+.btn:hover{
+    background:#3125d5;
+    transform:translateY(-2px);
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Left Side -->
+    <div class="left">
+
+        <!-- Replace with your own image -->
+        <img src="https://cdn-icons-png.flaticon.com/512/3588/3588614.png" alt="Admin">
+
+        <h1>SaleSkip</h1>
+
+        <p>
+            An administrator account has already been created for this system.
+            For security reasons, multiple administrator registrations are not allowed.
+        </p>
+
+    </div>
+
+    <!-- Right Side -->
+    <div class="right">
+
+        <div class="card">
+
+            <div class="icon">⚠</div>
+
+            <h2>Admin Already Exists</h2>
+
+            <p>
+                You cannot create another administrator account.
+                Please log in using the existing administrator credentials.
+            </p>
+
+            <a href="{% url 'login' %}" class="btn">
+                Go to Login →
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

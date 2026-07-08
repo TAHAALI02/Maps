@@ -1,0 +1,124 @@
+{% extends "accounts/base.html" %}
+{% block title %}Admin Sign Up — Maps{% endblock %}
+
+{% block brand_eyebrow %}Admin access{% endblock %}
+{% block brand_headline %}Set the map up<br>for everyone else.{% endblock %}
+{% block brand_sub %}Admin accounts manage locations, roles, and team access across the whole workspace.{% endblock %}
+
+{% block content %}
+
+
+<h2 class="auth-title">Create an admin account</h2>
+<p class="auth-subtitle">This account gets full workspace access.</p>
+
+<form method="post" id="admin-signup-form" novalidate>
+  {% csrf_token %}
+
+  <div class="field-row">
+    <div class="field">
+      <label for="{{ form.first_name.id_for_label }}">First name</label>
+      {{ form.first_name }}
+      {{ form.first_name.errors }}
+    </div>
+    <div class="field">
+      <label for="{{ form.last_name.id_for_label }}">Last name</label>
+      {{ form.last_name }}
+      {{ form.last_name.errors }}
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="{{ form.date_of_birth.id_for_label }}">Date of birth</label>
+      {{ form.date_of_birth }}
+      {{ form.date_of_birth.errors }}
+    </div>
+    <div class="field">
+      <label for="{{ form.gender.id_for_label }}">Gender</label>
+      {{ form.gender }}
+      {{ form.gender.errors }}
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="{{ form.username.id_for_label }}">Username</label>
+    {{ form.username }}
+    <div id="username-status" class="username-status"></div>
+    {{ form.username.errors }}
+  </div>
+
+  <div class="field">
+    <label for="{{ form.role.id_for_label }}">Role</label>
+    {{ form.role }}
+  </div>
+
+  <div class="field">
+    <label for="{{ form.email.id_for_label }}">Email</label>
+    {{ form.email }}
+    {{ form.email.errors }}
+  </div>
+
+  <div class="field">
+    <label for="{{ form.password.id_for_label }}">Password</label>
+    {{ form.password }}
+    {{ form.password.errors }}
+  </div>
+
+  <div class="field">
+    <label for="{{ form.confirm_password.id_for_label }}">Confirm password</label>
+    {{ form.confirm_password }}
+    {{ form.confirm_password.errors }}
+  </div>
+
+  <button type="submit" id="submit-btn" class="auth-submit">Create admin account</button>
+</form>
+
+<div class="auth-foot-link">
+  Already have an account? <a href="{% url 'login' %}">Log in</a>
+</div>
+
+<script>
+(function () {
+  const usernameInput = document.getElementById("{{ form.username.id_for_label }}");
+  const statusDiv = document.getElementById("username-status");
+  let debounceTimer = null;
+  let usernameIsAvailable = null;
+
+  function checkUsername(username) {
+    if (!username || username.length < 3) {
+      statusDiv.textContent = "";
+      statusDiv.className = "username-status";
+      usernameIsAvailable = null;
+      return;
+    }
+    statusDiv.textContent = "Checking availability...";
+    statusDiv.className = "username-status checking";
+    fetch(`/api/check-username/?username=${encodeURIComponent(username)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        statusDiv.textContent = data.message;
+        statusDiv.className = "username-status " + (data.available ? "available" : "taken");
+        usernameIsAvailable = data.available;
+      })
+      .catch(() => {
+        statusDiv.textContent = "Could not check username right now.";
+        statusDiv.className = "username-status";
+      });
+  }
+
+  usernameInput.addEventListener("input", function () {
+    clearTimeout(debounceTimer);
+    const value = this.value.trim();
+    debounceTimer = setTimeout(() => checkUsername(value), 400);
+  });
+
+  document.getElementById("admin-signup-form").addEventListener("submit", function (e) {
+    if (usernameIsAvailable === false) {
+      e.preventDefault();
+      statusDiv.textContent = "Please choose an available username before submitting.";
+      statusDiv.className = "username-status taken";
+    }
+  });
+})();
+</script>
+{% endblock %}
