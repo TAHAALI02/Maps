@@ -1,55 +1,91 @@
 <!DOCTYPE html>
 {% load static %}
 <html lang="en">
-
+ 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maps Home</title>
-    
+ 
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-
-        <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
-
-    <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
-
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" ... />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />  <!-- NEW -->
     <link rel="stylesheet" href="{% static 'css/home.css' %}">
-</head>
 
+
+ 
+   <link rel="stylesheet" href="{% static 'css/home.css' %}">
+</head>
+ 
 <body>
 
-    <header>
-            <h1>🌍 Maps Explorer</h1>
-            <p>Search any location and explore it on the map.</p>
-        </header>
-    <div class="search-box">
-            <form method="post">
+<header class='head'>
+
+
+
+    <div class="title">
+        Maps Explorer
+    </div>
+
+    <div class="auth-buttons">
+        {% if user.is_authenticated %}
+            <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
-                {{ form }}
-                <button type="submit">Search</button>
+                <button type="submit">Logout</button>
             </form>
-        </div>
+        {% else %}
+        <button class="url-btn" onclick="window.location.href='{% url "login" %}'">
+            Login
+        </button>
 
-    <div id="map"></div>
+        <button class="signup-btn" onclick="window.location.href='{% url "sign" %}'">
+            Sign Up
+        </button>
+        {% endif %}
+    </div>
+
+<div class="map-tools">
+
+    <button id="markerTool">
+        Marker
+    </button>
+
+</div>
+
+</header>
 
 
 
+<div id="map"></div>
 
 </body>
 
-</html>
+
+
+
 <!--leaflet JS-->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>  <!-- NEW -->
 
+{% comment %} // =========================================================================================================== {% endcomment %}
 <script>
+
+
+
+
+
+
+
+
+
+
+ // ====================================================================================================  
     const lat = {{ data.latitude }};
     const lng = {{ data.longitude }};
     const zoom = {{ data.zoom }};
@@ -57,16 +93,131 @@
 // Create the map
     const map = L.map('map').setView([lat, lng], zoom);
 
+
+    const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+
+    map.on("click", function(e) {
+
+    if (!isAuthenticated) {
+        window.location.href = "{% url 'login' %}";
+        return;
+    }
+
+    // If the user has activated "Add Marker" mode, place a marker here
+    if (addMarkerMode) {
+        createMarker(e.latlng);
+
+        // reset tool state after placing
+        addMarkerMode = false;
+        markerTool.innerHTML = "📍 Add Marker";
+        markerTool.style.background = "";
+    }
+});
+function createMarker(latlng) {
+
+    const marker = L.marker(latlng, {
+        icon: myIcon,
+        draggable: true
+    }).addTo(userMarkers);
+
+    marker.bindPopup("Loading location...").openPopup();
+
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+        .then(res => res.json())
+        .then(data => {
+            const place =
+                data.address.city ||
+                data.address.town ||
+                data.address.village ||
+                data.address.state ||
+                "Unknown location";
+            marker.bindPopup(place).openPopup();
+        });
+
+    marker.on("dragend", function () {
+        const pos = marker.getLatLng();
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.lat}&lon=${pos.lng}`)
+            .then(res => res.json())
+            .then(data => {
+                const place =
+                    data.address.city ||
+                    data.address.town ||
+                    data.address.village ||
+                    data.address.state ||
+                    "Unknown location";
+                marker.bindPopup(place).openPopup();
+            });
+    });
+
+    marker.on("contextmenu", function () {
+        if (confirm("Delete this marker?")) {
+            userMarkers.removeLayer(marker);
+        }
+    });
+}
+
+
 // Add OpenStreetMap tiles
-osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
 })
-osm.addTo(map);
+/*
+osm.addTo(map);*/
+const apiKey = "UdxTHX9c3miBvaRx3DzT";
 
+var maptiler = L.tileLayer(
+    `https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${apiKey}`,
+    {
+        tileSize: 512,
+        zoomOffset: -1,
+        attribution: '&copy; MapTiler &copy; OpenStreetMap contributors'
+    }
+);
+
+maptiler.addTo(map);
+
+
+var maptilerStreets = L.tileLayer(
+    `https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${apiKey}`,
+    {
+        tileSize: 512,
+        zoomOffset: -1,
+        attribution: '&copy; MapTiler &copy; OpenStreetMap contributors'
+    }
+);
+
+var maptilerSatellite = L.tileLayer(
+    `https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${apiKey}`,
+    {
+        tileSize: 512,
+        zoomOffset: -1,
+        attribution: '&copy; MapTiler'
+    }
+);
+
+var maptilerOutdoor = L.tileLayer(
+    `https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=${apiKey}`,
+    {
+        tileSize: 512,
+        zoomOffset: -1
+    }
+);
+
+var maptilerBasic = L.tileLayer(
+    `https://api.maptiler.com/maps/basic-v2/{z}/{x}/{y}.png?key=${apiKey}`,
+    {
+        tileSize: 512,
+        zoomOffset: -1
+    }
+);
 // ====================================Add a marker===================================================
 
 var myIcon = L.icon({
     iconUrl: '{% static 'images/pointer.png' %}',
+    iconSize: [38, 45],
+    });
+var myIcon2 = L.icon({
+    iconUrl: '{% static 'images/marker.png' %}',
     iconSize: [38, 45],
     });
 
@@ -82,7 +233,9 @@ var marker = L.marker([lat, lng],
         .bindPopup("Saudi Arabia")
         .openPopup();
 
-// Detect location when the marker is moved
+
+// Detect location when the marker is moved 
+// Basically its a Reverse geocoding 
 
 marker.on("dragend", function(e){
     // just for understanding how to get latitude and lingitude
@@ -153,16 +306,25 @@ googleSat = L.tileLayer('http://{s}.google.com/vt?lyrs=s&x={x}&y={y}&z={z}',{
 
 
 //====================Layer and Layer Group on maps (we can also say layer controler)
-var baseMaps = {
+/*var baseMaps = {
     "OpenStreetMap": osm,
     "Google Street": googleStreets,
     "Google Statelite":googleSat,
     "GeoportailFrance plan":GeoportailFrance_plan
+};*/
+var baseMaps = {
+    "OpenStreetMap": osm,
+    "MapTiler Streets": maptilerStreets,
+    "MapTiler Satellite": maptilerSatellite,
+    "MapTiler Outdoor": maptilerOutdoor,
+    "MapTiler Basic": maptilerBasic,
+    "Google Streets": googleStreets,
+    "Google Satellite": googleSat
 };
 
 // This is for marker (like pointer on maps)
 var overlayMaps = {
-    "marker": marker
+    "marker": marker,
 };
 
 // this is adding layers to our map
@@ -206,7 +368,7 @@ map.addLayer(markers);
 
 
 // this is for 
-var points = [];
+/*var points = [];
 
 var polygon = null;
 
@@ -226,8 +388,9 @@ map.on("click", function (e) {
     }
 });
 
-
-
+*/
+//----------------------------------------------------------------
+// is it allowing to draw on amap
 var drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
 
@@ -242,6 +405,71 @@ map.addControl(drawControl);
 map.on(L.Draw.Event.CREATED, function (e) {
     drawnItems.addLayer(e.layer);
 });
+
+
+
+// ==========================================
+// allow user to maker on on map
+let addMarkerMode = false;
+
+const markerTool = document.getElementById("markerTool");
+
+markerTool.addEventListener("click", function () {
+
+    if (!isAuthenticated) {
+        window.location.href = "{% url 'login' %}";
+        return;
+    }
+
+    addMarkerMode = true;
+
+    markerTool.innerHTML = "Click on map...";
+    markerTool.style.background = "green";
+});
+
+let userMarkers = L.layerGroup().addTo(map);
+
+function createMarker(latlng) {
+
+    const marker = L.marker(latlng, {
+        icon: myIcon,
+        draggable: true
+    }).addTo(userMarkers);
+
+    marker.bindPopup("New Marker").openPopup();
+
+    marker.on("dragend", function () {
+
+        const pos = marker.getLatLng();
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.lat}&lon=${pos.lng}`)
+        .then(res => res.json())
+        .then(data => {
+
+            const place =
+                data.address.city ||
+                data.address.town ||
+                data.address.village ||
+                data.address.state ||
+                "Unknown location";
+
+            marker.bindPopup(place).openPopup();
+        });
+
+    });
+
+    marker.on("contextmenu", function () {
+
+        if (confirm("Delete this marker?")) {
+            userMarkers.removeLayer(marker);
+        }
+
+    });
+
+}
+
+
+
 
 </script>
 

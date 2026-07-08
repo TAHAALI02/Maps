@@ -71,13 +71,21 @@ TEMPLATES = [
 WSGI_APPLICATION = 'maps.wsgi.application'
 
 
+LOGIN_REDIRECT_URL ='/'
+LOGOUT_REDIRECT_URL = '/'
+
+
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'map',
+        'USER': 'myuser',
+        'PASSWORD': 'tiger',
+        'HOST': 'localhost',  # or your PostgreSQL server IP
+        'PORT': '5432',
     }
 }
 
