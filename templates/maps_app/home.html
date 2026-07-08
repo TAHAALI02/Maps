@@ -140,19 +140,20 @@
 <script>
 
 
-// this for profile toggel=============================
 // ---- Profile dropdown toggle ----
 const profileBar = document.getElementById("profileBar");
 const profileTrigger = document.getElementById("profileTrigger");
 
-profileTrigger.addEventListener("click", function (e) {
-    e.stopPropagation();
-    profileBar.classList.toggle("open");
-});
+if (profileBar && profileTrigger) {
+    profileTrigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        profileBar.classList.toggle("open");
+    });
 
-document.addEventListener("click", function () {
-    profileBar.classList.remove("open");
-});
+    document.addEventListener("click", function () {
+        profileBar.classList.remove("open");
+    });
+}
 
 
 
