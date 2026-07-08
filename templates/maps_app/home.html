@@ -6,54 +6,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maps Home</title>
- 
+ <link rel="stylesheet" href="{% static 'css/home.css' %}">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" ... />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />  <!-- NEW -->
-    <link rel="stylesheet" href="{% static 'css/home.css' %}">
 
-
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
  
-   <link rel="stylesheet" href="{% static 'css/home.css' %}">
+
 </head>
  
 <body>
 
-<header class='head'>
+<header class="head">
 
-
-
-    <div class="title">
-        Maps Explorer
+    <div class="head-side head-side-left">
+        <div class="brand-mark">
+            <span class="brand-dot"></span>
+        </div>
     </div>
 
-    <div class="auth-buttons">
-        {% if user.is_authenticated %}
-            <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button type="submit">Logout</button>
-            </form>
-        {% else %}
-        <button class="url-btn" onclick="window.location.href='{% url "login" %}'">
-            Login
-        </button>
+    <div class="head-center">
+        <span class="title">Maps Explorer</span>
+    </div>
 
-        <button class="signup-btn" onclick="window.location.href='{% url "sign" %}'">
-            Sign Up
-        </button>
+    <div class="head-side head-side-right">
+        {% if user.is_authenticated %}
+            <div class="profile-bar" id="profileBar">
+                <button class="profile-trigger" id="profileTrigger" type="button">
+                    <span class="profile-avatar">{{ user.first_name|default:user.username|first|upper }}</span>
+                    <span class="profile-name">{{ user.first_name|default:user.username }}</span>
+                    <svg class="profile-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="dropdown-header">
+                        <span class="dropdown-name">{{ user.get_full_name|default:user.username }}</span>
+                        <span class="dropdown-role">{{ user.role|default:"user"|capfirst }}</span>
+                    </div>
+                    <form method="post" action="{% url 'logout' %}" class="dropdown-logout-form">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-logout-btn">
+                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                                <path d="M6 2H3a1 1 0 00-1 1v9a1 1 0 001 1h3M10 10.5L13.5 7.5L10 4.5M13.5 7.5H5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <div class="auth-buttons">
+                <button class="url-btn" onclick="window.location.href='{% url "login" %}'">
+                    Login
+                </button>
+                <button class="signup-btn" onclick="window.location.href='{% url "user_signup" %}'">
+                    Sign Up
+                </button>
+            </div>
         {% endif %}
     </div>
-
-<div class="map-tools">
-
-    <button id="markerTool">
-        Marker
-    </button>
-
-</div>
 
 </header>
 
@@ -77,11 +95,31 @@
 <script>
 
 
+// this for profile toggel=============================
+// ---- Profile dropdown toggle ----
+(function () {
+    const profileBar = document.getElementById("profileBar");
+    if (!profileBar) return; // not logged in, nothing to wire up
 
+    const trigger = document.getElementById("profileTrigger");
 
+    trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        profileBar.classList.toggle("open");
+    });
 
+    document.addEventListener("click", function (e) {
+        if (!profileBar.contains(e.target)) {
+            profileBar.classList.remove("open");
+        }
+    });
 
-
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+            profileBar.classList.remove("open");
+        }
+    });
+})();
 
 
 
@@ -113,6 +151,7 @@
         markerTool.style.background = "";
     }
 });
+/*
 function createMarker(latlng) {
 
     const marker = L.marker(latlng, {
@@ -156,6 +195,7 @@ function createMarker(latlng) {
     });
 }
 
+*/
 
 // Add OpenStreetMap tiles
 var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -336,35 +376,6 @@ var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
 
 //this is for clustring
 
-var markers = L.markerClusterGroup();
-
-var locations = [
-    [24.38,46.43],
-    [24.39,46.44],
-    [24.40,46.45],
-    [24.42,46.47],
-    [24.45,46.50],
-    [24.47,46.52],
-    [24.49,46.54],
-    [24.40,46.57],
-    [24.42,46.63],
-    [24.45,46.65],
-    [24.47,46.60],
-];
-
-locations.forEach(function(location){
-
-    var marker = L.marker(location,{
-        icon:myIcon
-    });
-
-    marker.bindPopup("Marker");
-
-    markers.addLayer(marker);
-
-});
-
-map.addLayer(markers);
 
 
 // this is for 
@@ -391,6 +402,9 @@ map.on("click", function (e) {
 */
 //----------------------------------------------------------------
 // is it allowing to draw on amap
+
+
+
 var drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
 
@@ -409,64 +423,7 @@ map.on(L.Draw.Event.CREATED, function (e) {
 
 
 // ==========================================
-// allow user to maker on on map
-let addMarkerMode = false;
 
-const markerTool = document.getElementById("markerTool");
-
-markerTool.addEventListener("click", function () {
-
-    if (!isAuthenticated) {
-        window.location.href = "{% url 'login' %}";
-        return;
-    }
-
-    addMarkerMode = true;
-
-    markerTool.innerHTML = "Click on map...";
-    markerTool.style.background = "green";
-});
-
-let userMarkers = L.layerGroup().addTo(map);
-
-function createMarker(latlng) {
-
-    const marker = L.marker(latlng, {
-        icon: myIcon,
-        draggable: true
-    }).addTo(userMarkers);
-
-    marker.bindPopup("New Marker").openPopup();
-
-    marker.on("dragend", function () {
-
-        const pos = marker.getLatLng();
-
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.lat}&lon=${pos.lng}`)
-        .then(res => res.json())
-        .then(data => {
-
-            const place =
-                data.address.city ||
-                data.address.town ||
-                data.address.village ||
-                data.address.state ||
-                "Unknown location";
-
-            marker.bindPopup(place).openPopup();
-        });
-
-    });
-
-    marker.on("contextmenu", function () {
-
-        if (confirm("Delete this marker?")) {
-            userMarkers.removeLayer(marker);
-        }
-
-    });
-
-}
 
 
 

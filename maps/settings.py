@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'maps_app',
 ]
 
+AUTH_USER_MODEL = "maps_app.CustomUser"
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
