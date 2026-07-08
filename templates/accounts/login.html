@@ -2,9 +2,7 @@
 {% block title %}Login — Maps{% endblock %}
 
 {% block content %}
-<div class="auth-eyebrow-link">
-  Don't have an account? <a href="{% url 'user_signup' %}">Create one now</a>, it's free.
-</div>
+
 
 <h2 class="auth-title">Welcome back</h2>
 <p class="auth-subtitle">Log in to pick up right where you left off.</p>
@@ -32,6 +30,6 @@
 </form>
 
 <div class="auth-foot-link">
-  Signing up as admin? <a href="{% url 'admin_signup' %}">Go here</a>
+  Don't have an account? <a href="{% url 'signup' %}">Create one now</a>, it's free.
 </div>
 {% endblock %}

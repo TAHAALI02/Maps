@@ -75,7 +75,7 @@ User = get_user_model()
 
 def admin_signup(request):
     if User.objects.filter(role=User.ROLE_ADMIN).exists():
-        return render(request,'maps_app/adminalready.html')
+        return redirect('login')
 
     if request.method == "POST":
         form = AdminSignupForm(request.POST)
@@ -126,7 +126,7 @@ from .forms import LoginForm
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect("post_login_redirect")
+        return redirect("home")
 
     if request.method == "POST":
         form = LoginForm(request.POST)
