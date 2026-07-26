@@ -1,15 +1,23 @@
 {% extends "accounts/base.html" %}
+
+{% block extracss %}
+
+{% endblock %}
+  
 {% block title %}Admin Sign Up — Maps{% endblock %}
 
-{% block brand_eyebrow %}Admin access{% endblock %}
-{% block brand_headline %}Set the map up<br>for everyone else.{% endblock %}
-{% block brand_sub %}Admin accounts manage locations, roles, and team access across the whole workspace.{% endblock %}
+
+
+{% block brand_eyebrow %}Administrator access{% endblock %}
+{% block brand_headline %}Manage with<br>confidence.{% endblock %}
+{% block brand_sub %}Create a secure administrator account for your workspace.{% endblock %}
 
 {% block content %}
 
+<!--{% include "maps_app/toast.html" %}-->
 
-<h2 class="auth-title">Create an admin account</h2>
-<p class="auth-subtitle">This account gets full workspace access.</p>
+<h2 class="auth-title">Create Admin Account</h2>
+<p class="auth-subtitle">Secure workspace access starts here.</p>
 
 <form method="post" id="admin-signup-form" novalidate>
   {% csrf_token %}

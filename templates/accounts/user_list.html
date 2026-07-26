@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Manage Users — Maps{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/user-list.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+    <!-- Page sub-header -->
+    
+
+    <!-- Page content -->
+    <div class="page-content">
+
+        <!-- Stats -->
+        <div class="stats-row">
+
+            <div class="stat-card animate-in animate-in-delay-1">
+                <!-- <div class="stat-icon stat-icon-total">👤</div> -->
+                <div class="stat-info">
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value">{{ users|length }}</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-2">
+                <!-- <div class="stat-icon stat-icon-active">✅</div> -->
+                <div class="stat-info">
+                    <div class="stat-label">Active</div>
+                    <div class="stat-value" id="statActive">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-3">
+                <!-- <div class="stat-icon stat-icon-locked">🔒</div> -->
+                <div class="stat-info">
+                    <div class="stat-label">Locked</div>
+                    <div class="stat-value" id="statLocked">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-4">
+                <!-- <div class="stat-icon stat-icon-admins">🛡️</div> -->
+                <div class="stat-info">
+                    <div class="stat-label">Unlocked</div>
+                    <div class="stat-value" id="statAdmins">0</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Table card -->
+        <div class="table-card animate-in" style="animation-delay:.25s;opacity:0;">
+
+            <div class="table-toolbar">
+                <div class="table-toolbar-left">
+                    <div class="table-toolbar-title">All Users</div>
+                    <div class="table-count">{{ users|length }} record{{ users|length|pluralize }}</div>
+                </div>
+                <div class="table-toolbar-right">
+                    <div class="search-box">
+                        <svg class="search-box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" id="userSearch" placeholder="Search users..." autocomplete="off">
+                    </div>
+                    <button class="filter-btn" id="filterAll" data-filter="all">All</button>
+                    <button class="filter-btn" id="filterActive" data-filter="active">Active</button>
+                    <button class="filter-btn" id="filterLocked" data-filter="locked">Locked</button>
+                </div>
+            </div>
+
+            <div class="data-table-wrap">
+                <table class="data-table" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody">
+                    {% for u in users %}
+                        <tr data-username="{{ u.username }}"
+                            data-fullname="{{ u.first_name }} {{ u.last_name }}"
+                            data-email="{{ u.email }}"
+                            data-role="{{ u.role }}"
+                            data-status="{% if u.is_active %}active{% else %}locked{% endif %}">
+
+                            <!-- User -->
+                            <td>
+                                <div class="user-cell">
+                                    <div class="user-avatar">
+                                        {% if u.profile_image %}
+                                            <img src="{{ u.profile_image.url }}" alt="Profile">
+                                        {% else %}
+                                            <img src="{% static 'images/default-profile.png' %}">
+                                        {% endif %}
+                                        <span class="user-avatar-status {% if u.is_active %}online{% else %}offline{% endif %}"></span>
+                                    </div>
+                                    <div class="user-name-group">
+                                        <div class="user-fullname">
+                                            {% if u.first_name %}
+                                                {{ u.first_name }} {{ u.last_name }}
+                                            {% else %}
+                                                {{ u.username }}
+                                            {% endif %}
+                                            {% if u.id == request.user.id %}
+                                                <span class="you-badge">You</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="user-handle">@{{ u.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Email -->
+                            <td class="user-email-col">{{ u.email }}</td>
+
+                            <!-- Role -->
+                            <td>
+                                <span class="role-badge role-{{ u.role }}">
+                                    <!-- {% if u.role == 'admin' %}🛡️{% else %}👤{% endif %} -->
+                                    {{ u.get_role_display }}
+                                </span>
+                            </td>
+
+                            <!-- Status -->
+                            <td>
+                                {% if u.is_active %}                                    
+                                    <span class="status-badge status-active">Active</span>
+                                {% else %}
+                                    <span class="status-badge status-locked">Locked</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Joined -->
+                            <td>
+                                <div class="date-col">{{ u.date_joined|date:"d M Y" }}</div>
+                                <div class="date-sub">{{ u.date_joined|timesince }} ago</div>
+                            </td>
+
+                            <!-- Action -->
+                            <td>
+                                {% if u.id != request.user.id or u.is_admin %}
+                                    <form method="post" action="{% url 'toggle_lock' u.id %}">
+                                        {% csrf_token %}
+                                        {% if u.is_active %}
+                                            <button class="action-btn action-lock" type="submit">
+                                                    Lock 
+                                            </button>
+                                        {% comment %} {% elif u.is_admin %}
+                                            <button class="action-btn action-lock" type="button" style="pointer-events: none;">
+                                                can't Lock
+                                            </button>{% endcomment %}
+                                        {% else %} 
+                                            <button class="action-btn action-unlock" type="submit">
+                                                Unlock
+                                            </button>
+                                        {% endif %}
+                                    </form>
+                                {% else %}
+                                    <span class="action-self-label">— You</span>
+                                {% endif %}
+                            </td>
+
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">👥</div>
+                                    <div class="empty-state-text">No users found.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+    </div><!-- /page-content -->
+</div><!-- /page-wrapper -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ---- Compute stats ----
+(function () {
+    const rows = document.querySelectorAll("#usersBody tr[data-status]");
+    let active = 0, locked = 0, unlockedUsers  = 0;
+    rows.forEach(function (row) {
+        if (row.dataset.status === "active"){ 
+            active++;
+
+            // Count only non-admin active users
+            if (row.dataset.role !== "admin") {
+                unlockedUsers++;
+            }
+        
+        }
+
+        else locked++;
+        //if (row.dataset.role !=== "admin") admins++;
+    });
+    const el = (id) => document.getElementById(id);
+    if (el("statActive")) el("statActive").textContent = active;
+    if (el("statLocked")) el("statLocked").textContent = locked;
+    if (el("statAdmins")) el("statAdmins").textContent = unlockedUsers;
+})();
+
+// ---- Search ----
+(function () {
+    const input = document.getElementById("userSearch");
+    const rows = document.querySelectorAll("#usersBody tr[data-username]");
+    if (!input) return;
+
+    input.addEventListener("input", function () {
+        const q = this.value.toLowerCase().trim();
+        rows.forEach(function (row) {
+            const text = (row.dataset.username + " " + row.dataset.fullname + " " + row.dataset.email).toLowerCase();
+            row.style.display = text.includes(q) ? "" : "none";
+        });
+    });
+})();
+
+// ---- Filter buttons ----
+(function () {
+    const btns = document.querySelectorAll(".filter-btn[data-filter]");
+    const rows = document.querySelectorAll("#usersBody tr[data-status]");
+
+    btns.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            btns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            const filter = btn.dataset.filter;
+            rows.forEach(function (row) {
+                if (filter === "all") {
+                    row.style.display = "";
+                } else {
+                    row.style.display = row.dataset.status === filter ? "" : "none";
+                }
+            });
+        });
+    });
+
+    const allBtn = document.getElementById("filterAll");
+    if (allBtn) allBtn.classList.add("active");
+})();
+</script>
+{% endblock %}

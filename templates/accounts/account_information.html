@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Account Settings — Maps{% endblock %}
+
+
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/account.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+<!--  -->
+
+    <!-- Page content (narrow for forms) -->
+    <div class="page-content is-narrow">
+
+        <!-- ============== Personal Information Card ============== -->
+        <div class="section-card animate-in animate-in-delay-1">
+
+            <div class="section-card-header">
+                <div>
+                    <div class="section-card-title">
+                        <!-- <span class="section-card-title-icon icon-profile">👤</span> -->
+                        Personal Information
+                    </div>
+                    <div class="section-card-subtitle">Update your profile photo, name, and contact details</div>
+                </div>
+            </div>
+
+            <div class="section-card-body">
+
+                <form method="post" enctype="multipart/form-data" id="profileForm">
+                    {% csrf_token %}
+
+                    <!-- Avatar area -->
+                    <div class="profile-avatar-area">
+                        <div class="profile-avatar-ring">
+                            {% if request.user.profile_image %}
+                                <img
+                                    src="{{ request.user.profile_image.url }}"
+                                    id="preview"
+                                    class="profile-avatar-img"
+                                    alt="Profile Image">
+                            {% else %}
+                                <img
+                                    src="{% static 'images/default-profile.png' %}"
+                                    id="preview"
+                                    class="profile-avatar-img"
+                                    alt="Profile Image">
+                            {% endif %}
+                            <label for="id_profile_image" class="profile-avatar-edit" title="Change photo">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                                    <circle cx="12" cy="13" r="4"/>
+                                </svg>
+                            </label>
+                        </div>
+                        <div class="profile-avatar-details">
+                            <h3>
+                                {% if request.user.first_name %}
+                                    {{ request.user.first_name }} {{ request.user.last_name }}
+                                {% else %}
+                                    {{ request.user.username }}
+                                {% endif %}
+                            </h3>
+                            <div class="profile-avatar-meta">
+                                @{{ request.user.username }}
+                                <span class="role-tag role-tag-{{ request.user.role }}">
+                                    <!-- {% if request.user.role == "admin" %}🛡️{% else %}👤{% endif %} -->
+                                    {{ request.user.get_role_display }}
+                                </span>
+                            </div>
+                            <div class="profile-upload-hint">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                Click camera to upload · JPG, PNG, WEBP · Max 2 MB
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden file input -->
+                    <div class="profile-file-input">
+                        {{ profile_form.profile_image }}
+                    </div>
+
+                    {% if profile_form.profile_image.errors %}
+                        <div class="field-error">{{ profile_form.profile_image.errors }}</div>
+                    {% endif %}
+
+                    <!-- Form fields -->
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label class="form-label">First Name</label>
+                            {{ profile_form.first_name }}
+                            {{ profile_form.first_name.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Last Name</label>
+                            {{ profile_form.last_name }}
+                            {{ profile_form.last_name.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Username</label>
+                            {{ profile_form.username }}
+                            <div id="username-status" class="username-status"></div>
+                            {{ profile_form.username.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            {{ profile_form.email }}
+                            {{ profile_form.email.errors }}
+                            <div class="field-hint">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                Changing email will require you to log in again
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Date of Birth</label>
+                            {{ profile_form.date_of_birth }}
+                            {{ profile_form.date_of_birth.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Gender</label>
+                            {{ profile_form.gender }}
+                            {{ profile_form.gender.errors }}
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" name="update_profile" class="btn btn-primary">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/>
+                                <polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            Save Changes
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+        <!-- ============== Change Password Card ============== -->
+        <div class="section-card animate-in animate-in-delay-2">
+
+            <div class="section-card-header">
+                <div>
+                    <div class="section-card-title">
+                        <!-- <span class="section-card-title-icon icon-password">🔑</span> -->
+                        Change Password
+                    </div>
+                    <div class="section-card-subtitle">Ensure your account uses a strong, unique password</div>
+                </div>
+            </div>
+
+            <div class="section-card-body">
+
+                <form method="post" id="passwordForm">
+                    {% csrf_token %}
+
+                    <div class="form-grid">
+
+                        <div class="form-group full-width">
+                            <label class="form-label">Current Password</label>
+                            {{ password_form.current_password }}
+                            {{ password_form.current_password.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">New Password</label>
+                            {{ password_form.new_password }}
+                            {{ password_form.new_password.errors }}
+                            <div class="password-strength" id="passwordStrength">
+                                <div class="password-strength-bar" id="bar1"></div>
+                                <div class="password-strength-bar" id="bar2"></div>
+                                <div class="password-strength-bar" id="bar3"></div>
+                                <div class="password-strength-bar" id="bar4"></div>
+                            </div>
+                            <div class="password-strength-text" id="strengthText"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Confirm New Password</label>
+                            {{ password_form.confirm_password }}
+                            {{ password_form.confirm_password.errors }}
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" name="change_password" class="btn btn-primary">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0110 0v4"/>
+                            </svg>
+                            Update Password
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div><!-- /page-content -->
+</div><!-- /page-wrapper -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ---- Click-to-edit readonly fields ----
+(function () {
+    document.querySelectorAll(".editable").forEach(function (field) {
+        field.addEventListener("click", function () {
+            field.removeAttribute("readonly");
+            field.removeAttribute("disabled");
+            field.focus();
+        });
+    });
+})();
+
+// ---- Profile image preview ----
+(function () {
+    const imageInput = document.getElementById("id_profile_image");
+    if (!imageInput) return;
+
+    imageInput.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (file) {
+            const preview = document.getElementById("preview");
+            if (preview) {
+                preview.src = URL.createObjectURL(file);
+            }
+        }
+    });
+})();
+
+
+//-------Username avaliblity indicator------------
+// ---- Username availability ----
+(function () {
+
+    const usernameInput = document.getElementById("id_username");
+    const status = document.getElementById("username-status");
+    const form = document.getElementById("profileForm");
+
+    if (!usernameInput || !status || !form) return;
+
+    const originalUsername = usernameInput.value.trim();
+
+    let debounceTimer = null;
+    let usernameAvailable = true;
+
+    function checkUsername(username) {
+
+        if (username === originalUsername) {
+            status.textContent = "";
+            status.className = "username-status";
+            usernameAvailable = true;
+            return;
+        }
+
+        if (username.length < 3) {
+            status.textContent = "";
+            status.className = "username-status";
+            usernameAvailable = false;
+            return;
+        }
+
+        status.textContent = "Checking availability...";
+        status.className = "username-status checking";
+
+        fetch(`/api/check-username/?username=${encodeURIComponent(username)}`)
+            .then(r => r.json())
+            .then(data => {
+
+                usernameAvailable = data.available;
+
+                status.textContent = data.message;
+
+                status.className =
+                    "username-status " +
+                    (data.available ? "available" : "taken");
+            })
+            .catch(() => {
+
+                usernameAvailable = false;
+
+                status.textContent =
+                    "Unable to verify username.";
+
+                status.className = "username-status taken";
+            });
+    }
+
+    usernameInput.addEventListener("input", function () {
+
+        clearTimeout(debounceTimer);
+
+        debounceTimer = setTimeout(() => {
+            checkUsername(this.value.trim());
+        }, 400);
+
+    });
+
+    form.addEventListener("submit", function (e) {
+
+        if (!usernameAvailable) {
+            e.preventDefault();
+            usernameInput.focus();
+        }
+
+    });
+
+})();
+
+
+// ---- Password strength indicator ----
+(function () {
+    const pwInput = document.getElementById("id_new_password");
+    if (!pwInput) return;
+
+    const bars = [
+        document.getElementById("bar1"),
+        document.getElementById("bar2"),
+        document.getElementById("bar3"),
+        document.getElementById("bar4"),
+    ];
+    const strengthText = document.getElementById("strengthText");
+
+    pwInput.addEventListener("input", function () {
+        const pw = pwInput.value;
+        let score = 0;
+
+        if (pw.length >= 8) score++;
+        if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+        if (/\d/.test(pw)) score++;
+        if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+        const levels = ["", "Weak", "Fair", "Good", "Strong"];
+        const classes = ["", "active-weak", "active-weak", "active-medium", "active-strong"];
+
+        bars.forEach(function (bar, i) {
+            bar.className = "password-strength-bar";
+            if (i < score) {
+                bar.classList.add(classes[score]);
+            }
+        });
+
+        if (pw.length === 0) {
+            strengthText.textContent = "";
+        } else {
+            strengthText.textContent = levels[score] || "Weak";
+            strengthText.style.color =
+                score <= 1 ? "#EF4444" :
+                score === 2 ? "#F59E0B" :
+                score === 3 ? "#F59E0B" : "#22C55E";
+        }
+    });
+})();
+</script>
+{% endblock %}

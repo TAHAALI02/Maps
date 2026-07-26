@@ -26,8 +26,11 @@ SECRET_KEY = 'django-insecure-$*jes^o@v5jou5cz93y%&&jh8(&s+kx-a3ra$#lpz%++r-k(3k
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.ngrok-free.dev",
+]
 
 # Application definition
 
@@ -36,8 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.messages',   #toast msg
     'maps_app',
 ]
 
@@ -51,7 +54,17 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
 ]
+
+# this is for taost msg
+MESSAGE_TAGS = {
+    10: "debug",
+    20: "info",
+    25: "success",
+    30: "warning",
+    40: "error",
+}
 
 ROOT_URLCONF = 'maps.urls'
 
@@ -129,7 +142,12 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [STATIC_DIR]
 
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+

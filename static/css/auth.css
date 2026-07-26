@@ -1,0 +1,312 @@
+/* ==========================================================================
+   auth.css — Auth pages (Login, Sign-up, Admin sign-up)
+   Depends on: base.css, toast.css
+   ========================================================================== */
+
+/* ---------- Body override for auth pages ---------- */
+body {
+    background: var(--surface);
+}
+
+/* ==========================================================================
+   Two-column auth shell
+   ========================================================================== */
+.auth-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ---------- Brand panel (left column) ---------- */
+.auth-brand {
+    flex: 0 0 44%;
+    position: relative;
+    background: var(--ink);
+    color: #ffffff;
+    padding: 56px 56px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+/* ---- Radar animation ---- */
+/* .radar {
+    position: absolute;
+    top: 38%;
+    left: 8%;
+    width: 220px;
+    height: 220px;
+    pointer-events: none;
+}
+
+.radar-ring {
+    position: absolute;
+    inset: 0;
+    border: 1.5px solid #d9d9d9;
+    border-radius: 50%;
+    animation: ping 3.2s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+}
+
+.radar-ring:nth-child(2) { animation-delay: 1.05s; }
+.radar-ring:nth-child(3) { animation-delay: 2.10s; }
+
+@keyframes ping {
+    0%   { transform: scale(0.15); opacity: 0.9; }
+    100% { transform: scale(1.60); opacity: 0; }
+}
+
+.radar-pin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    background: var(--signal);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 6px #d9d9d9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .radar-ring { animation: none; opacity: 0.25; }
+} */
+
+/* ---- Brand copy ---- */
+.brand-mark {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+    z-index: 1;
+}
+
+.brand-copy {
+    z-index: 1;
+    margin-top: auto;
+    padding-top: 220px;
+}
+
+.brand-eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--signal);
+    margin-bottom: 14px;
+    font-weight: 600;
+}
+
+.brand-headline {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(30px, 4vw, 42px);
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    margin: 0 0 18px;
+}
+
+.brand-sub {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #e5e5e5;
+    max-width: 34ch;
+}
+
+.brand-foot {
+    z-index: 1;
+    font-size: 12.5px;
+    color: #bdbdbd;
+    margin-top: 40px;
+}
+
+/* ---------- Form panel (right column) ---------- */
+.auth-form-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+}
+
+.auth-form-card {
+    width: 100%;
+    max-width: 380px;
+}
+
+/* Wide variant used by the account page */
+.auth-form-card.auth-form-card-wide {
+    max-width: 900px;
+}
+
+/* ==========================================================================
+   Form elements
+   ========================================================================== */
+.auth-eyebrow-link {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+
+.auth-eyebrow-link a {
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.auth-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+}
+
+.auth-subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 0 0 32px;
+    line-height: 1.5;
+}
+
+/* ---- Field ---- */
+.field {
+    margin-bottom: 22px;
+}
+
+.field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.field input,
+.field select {
+    width: 100%;
+    border: none;
+    border-bottom: 1.5px solid var(--hairline);
+    background: transparent;
+    padding: 8px 2px 10px;
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.field input:focus,
+.field select:focus  { border-bottom-color: var(--ink); }
+.field input[readonly] { color: var(--muted); }
+
+.field-row {
+    display: flex;
+    gap: 18px;
+}
+
+.field-row .field { flex: 1; }
+
+/* ---- Inline errors ---- */
+.field-error,
+.errorlist {
+    color: #C0392B;
+    font-size: 10.5px;
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* ---- Username availability ---- */
+.username-status {
+    font-size: 10.5px;
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+.username-status.available { color: #10B981; }
+.username-status.taken     { color: #C0392B; }
+.username-status.checking  { color: var(--muted); }
+
+/* ---- Submit button ---- */
+.auth-submit {
+    width: 100%;
+    padding: 13px;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14.5px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background var(--transition);
+}
+
+.auth-submit:hover    { background: var(--ink-light); }
+.auth-submit:disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+
+/* ---- Footer link ---- */
+.auth-foot-link {
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 22px;
+}
+
+.auth-foot-link a {
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+/* ==========================================================================
+   Account information layout (uses auth-form-card-wide)
+   ========================================================================== */
+.account-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 50px;
+    align-items: start;
+}
+
+.profile-image-wrapper {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 20px;
+    overflow: hidden;
+    border-radius: 50%;
+    border: 3px solid var(--hairline);
+    background: var(--surface);
+}
+
+.profile-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+}
+
+.save-btn     { width: auto; padding: 12px 35px; }
+.password-btn { width: 100%; }
+
+.profile-section,
+.password-section { width: 100%; }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 900px) {
+    .account-container { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 860px) {
+    .auth-shell     { flex-direction: column; }
+    .auth-brand     { flex: none; min-height: 260px; padding: 32px; }
+    .brand-copy     { padding-top: 90px; }
+    .radar          { width: 150px; height: 150px; top: 20%; }
+}

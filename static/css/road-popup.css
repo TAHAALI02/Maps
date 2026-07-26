@@ -1,0 +1,120 @@
+/* ================= Road Info Popup (Leaflet popup content) ================= */
+
+.road-popup {
+    min-width: 200px;
+    font-family: inherit;
+}
+
+.road-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.road-popup-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.road-popup-avatar-fallback {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e2e2e2;
+    color: #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.road-popup-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a1a1a;
+}
+
+.road-popup-username {
+    font-size: 12px;
+    color: #888;
+}
+
+.road-popup-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 2px;
+    color: #1a1a1a;
+}
+
+.road-popup-description {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.road-popup-meta {
+    font-size: 12px;
+    color: #888;
+}
+
+.road-popup-edit-btn {
+    margin-top: 12px;
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.road-popup-edit-btn:hover {
+    background: #1d4ed8;
+}
+
+
+.road-popup-delete-btn {
+    margin-top: 12px;
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    background: #dd415b;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.road-popup-delete-btn:hover {
+    background: #fb0b2b;
+}
+
+/* Draft polyline tooltips (pending/rejected) */
+.leaflet-tooltip.road-tooltip-pending {
+    background: #fef3c7;
+    color: #d97706;
+    border: none;
+    font-weight: 600;
+}
+
+.leaflet-tooltip.road-tooltip-rejected {
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    font-weight: 600;
+}
+
+.road-popup-avatar-fallback {
+    align-items: center;
+    justify-content: center;
+}

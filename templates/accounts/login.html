@@ -4,14 +4,14 @@
 {% block content %}
 
 
-<h2 class="auth-title">Welcome back</h2>
-<p class="auth-subtitle">Log in to pick up right where you left off.</p>
+<h2 class="auth-title">Welcome Back</h2>
+<p class="auth-subtitle">Sign in to continue.</p>
 
 <form method="post" novalidate>
   {% csrf_token %}
 
   <div class="field">
-    <label for="{{ form.username.id_for_label }}">Username</label>
+    <label for="{{ form.username.id_for_label }}">Username or Email</label>
     {{ form.username }}
     {{ form.username.errors }}
   </div>
@@ -30,6 +30,6 @@
 </form>
 
 <div class="auth-foot-link">
-  Don't have an account? <a href="{% url 'signup' %}">Create one now</a>, it's free.
+  Don't have an account? <a href="{% url 'signup' %}">Create one</a>.
 </div>
 {% endblock %}

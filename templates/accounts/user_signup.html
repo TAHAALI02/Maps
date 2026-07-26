@@ -1,18 +1,21 @@
 {% extends "accounts/base.html" %}
 {% block title %}Sign Up — Maps{% endblock %}
 
-{% block brand_eyebrow %}Get started{% endblock %}
-{% block brand_headline %}Your map,<br>set up in a minute.{% endblock %}
-{% block brand_sub %}
-Create an account to start pinning, sharing, and finding your way — free, no credit card needed.
-{% endblock %}
+{% comment %} {% block brand_eyebrow %}Secure access{% endblock %} {% endcomment %}
+{% block brand_headline %}Start with an<br>Account.{% endblock %}
+
+
+
+{% comment %} {% block brand_sub %}
+Create your account for a simple, secure way to manage your maps.
+{% endblock %} {% endcomment %}
 
 {% block content %}
 
 
 
-<h2 class="auth-title">Create your account</h2>
-<p class="auth-subtitle">Takes less than a minute.</p>
+<h2 class="auth-title">Create Your Account</h2>
+<p class="auth-subtitle">Create your account and get started.</p>
 
 <form method="post" id="user-signup-form" novalidate>
     {% csrf_token %}
@@ -160,6 +163,21 @@ Create an account to start pinning, sharing, and finding your way — free, no c
 
     });
 
+
+// ==================================
+// This is for Email
+//================================
+
+
+    const emailInput = document.getElementById("{{ form.email.id_for_label }}");
+
+    emailInput.addEventListener("input", function () {
+        const error = this.parentElement.querySelector(".errorlist");
+        if (error) {
+            error.remove();
+        }
+    });
+
     // ==========================
     // Password Validation
     // ==========================
@@ -274,6 +292,23 @@ Create an account to start pinning, sharing, and finding your way — free, no c
             return;
         }
 
+    });
+
+
+    window.addEventListener("load", function () {
+
+        if (usernameInput.value.trim().length >= 3) {
+            checkUsername(usernameInput.value.trim());
+        }
+
+        const error = validatePassword(passwordInput.value);
+
+        if (!error) {
+            passwordStatus.textContent = "✓ Strong password";
+            passwordStatus.className = "password-status valid";
+        }
+
+        validateConfirmPassword();
     });
 
 })();

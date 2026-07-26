@@ -1,0 +1,727 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Manage Permissions{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/user-list.css' %}?v=2">
+<style>
+.perm-action-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="page-wrapper">
+
+    <div class="page-content">
+
+        <!-- Summary Cards -->
+        <div class="stats-row" style="grid-template-columns: repeat(5, 1fr);">
+
+            <div class="stat-card animate-in animate-in-delay-1">
+                <div class="stat-info">
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value" id="statTotal">{{ users|length }}</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-2">
+                <div class="stat-info">
+                    <div class="stat-label">Road Edit</div>
+                    <div class="stat-value" id="statRoadEditGranted">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-3">
+                <div class="stat-info">
+                    <div class="stat-label">Road Delete</div>
+                    <div class="stat-value" id="statRoadDeleteGranted">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-4">
+                <div class="stat-info">
+                    <div class="stat-label">Property Edit</div>
+                    <div class="stat-value" id="statPropEditGranted">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-4">
+                <div class="stat-info">
+                    <div class="stat-label">Property Delete</div>
+                    <div class="stat-value" id="statPropDeleteGranted">0</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Table Card -->
+        <div class="table-card animate-in" style="animation-delay:.25s;opacity:0;">
+
+            <div class="table-toolbar">
+                <div class="table-toolbar-left">
+                    <div class="table-toolbar-title">Manage Permissions</div>
+                    <div class="table-count" id="visibleCount">{{ users|length }} record{{ users|length|pluralize }}</div>
+                </div>
+                <div class="table-toolbar-right">
+                    <div class="search-box">
+                        <svg class="search-box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" id="userSearch" placeholder="Search users..." autocomplete="off">
+                    </div>
+                    <button class="filter-btn active" id="filterAll" data-filter="all">All</button>
+                    <button class="filter-btn" id="filterGranted" data-filter="granted">Granted</button>
+                    <button class="filter-btn" id="filterDenied" data-filter="denied">Not Granted</button>
+                </div>
+            </div>
+
+            <div class="data-table-wrap">
+                <table class="data-table" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Road Edit</th>
+                            <th>Road Delete</th>
+                            <th>Property Edit</th>
+                            <th>Property Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody">
+                    {% for u in users %}
+                        <tr data-username="{{ u.username }}"
+                            data-fullname="{{ u.first_name }} {{ u.last_name }}"
+                            data-email="{{ u.email }}"
+                            data-role="{{ u.role }}"
+                            data-is-admin="{% if u.is_admin %}true{% else %}false{% endif %}"
+                            data-road-edit-perm="{% if u.road_edit_permission or u.is_admin %}granted{% else %}denied{% endif %}"
+                            data-road-delete-perm="{% if u.road_delete_permission or u.is_admin %}granted{% else %}denied{% endif %}"
+                            data-prop-edit-perm="{% if u.property_edit_permission or u.is_admin %}granted{% else %}denied{% endif %}"
+                            data-prop-delete-perm="{% if u.property_delete_permission or u.is_admin %}granted{% else %}denied{% endif %}">
+
+                            <td>
+                                <div class="user-cell">
+                                    <div class="user-avatar">
+                                        {% if u.profile_image %}
+                                            <img src="{{ u.profile_image.url }}" alt="Profile">
+                                        {% else %}
+                                            <img src="{% static 'images/default-profile.png' %}" alt="Default profile">
+                                        {% endif %}
+                                        <span class="user-avatar-status {% if u.is_active %}online{% else %}offline{% endif %}"></span>
+                                    </div>
+                                    <div class="user-name-group">
+                                        <div class="user-fullname">
+                                            {% if u.first_name %}
+                                                {{ u.first_name }} {{ u.last_name }}
+                                            {% else %}
+                                                {{ u.username }}
+                                            {% endif %}
+                                            {% if u.id == request.user.id %}
+                                                <span class="you-badge">You</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="user-handle">@{{ u.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="user-email-col">{{ u.email }}</td>
+
+                            <td>
+                                <span class="role-badge role-{{ u.role }}">
+                                    {{ u.get_role_display }}
+                                </span>
+                            </td>
+
+                            <!-- Road Edit Permission -->
+                            <td>
+                                <div class="perm-action-cell">
+                                    {% if u.is_admin %}
+                                        <span class="status-badge status-active">Granted</span>
+                                    {% elif u.id == request.user.id %}
+                                        <span class="status-badge {% if u.road_edit_permission %}status-active{% else %}status-locked{% endif %}">
+                                            {% if u.road_edit_permission %}Granted{% else %}Not Granted{% endif %}
+                                        </span>
+                                    {% else %}
+                                        {% if u.road_edit_permission %}
+                                            <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'road_edit_permission')">Revoke</button>
+                                        {% else %}
+                                            <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'road_edit_permission')">Grant</button>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            </td>
+
+                            <!-- Road Delete Permission -->
+                            <!-- Road Edit Permission -->
+                            <td>
+                                <div class="perm-action-cell">
+                                    {% if u.is_admin %}
+                                        <span class="status-badge status-active">Granted</span>
+                                    {% elif u.id == request.user.id %}
+                                        <span class="status-badge {% if u.road_delete_permission %}status-active{% else %}status-locked{% endif %}">
+                                            {% if u.road_delete_permission %}Granted{% else %}Not Granted{% endif %}
+                                        </span>
+                                    {% else %}
+                                        {% if u.road_edit_permission %}
+                                            <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'road_delete_permission')">Revoke</button>
+                                        {% else %}
+                                            <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'road_delete_permission')">Grant</button>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
+                            <!-- Property Edit Permission -->
+                            <td>
+                                <div class="perm-action-cell">
+                                    {% if u.is_admin %}
+                                        <span class="status-badge status-active">Granted</span>
+                                    {% elif u.id == request.user.id %}
+                                        <span class="status-badge {% if u.road_edit_permission %}status-active{% else %}status-locked{% endif %}">
+                                            {% if u.property_edit_permission %}Granted{% else %}Not Granted{% endif %}
+                                        </span>
+                                    {% else %}
+                                        {% if u.property_edit_permission %}
+                                            <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'property_edit_permission')">Revoke</button>
+                                        {% else %}
+                                            <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'property_edit_permission')">Grant</button>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
+
+
+                            <!-- Property Delete Permission -->
+                            <td>
+                                <div class="perm-action-cell">
+                                    {% if u.is_admin %}
+                                        <span class="status-badge status-active">Granted</span>
+                                    {% elif u.id == request.user.id %}
+                                        <span class="status-badge {% if u.road_delete_permission %}status-active{% else %}status-locked{% endif %}">
+                                            {% if u.property_delete_permission %}Granted{% else %}Not Granted{% endif %}
+                                        </span>
+                                    {% else %}
+                                        {% if u.property_delete_permission %}
+                                            <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'property_delete_permission')">Revoke</button>
+                                        {% else %}
+                                            <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'property_delete_permission')">Grant</button>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
+
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">Users</div>
+                                    <div class="empty-state-text">No users found.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentFilter = 'all';
+let searchQuery = '';
+
+const PERM_KEYS = [
+    { data: 'roadEditPerm',  stat: 'statRoadEditGranted'  },
+    { data: 'roadDeletePerm', stat: 'statRoadDeleteGranted' },
+    { data: 'propEditPerm',  stat: 'statPropEditGranted'  },
+    { data: 'propDeletePerm', stat: 'statPropDeleteGranted' },
+];
+
+function updateStats() {
+    const rows = document.querySelectorAll('#usersBody tr[data-username]');
+    let counts = { roadEditPerm: 0, roadDeletePerm: 0, propEditPerm: 0, propDeletePerm: 0 };
+    let admins = 0;
+
+    rows.forEach(row => {
+        PERM_KEYS.forEach(k => {
+            if (row.dataset[k.data] === 'granted') counts[k.data]++;
+        });
+        if (row.dataset.isAdmin === 'true' || row.dataset.role === 'admin') admins++;
+    });
+
+    const el = id => document.getElementById(id);
+    PERM_KEYS.forEach(k => {
+        if (el(k.stat)) el(k.stat).textContent = counts[k.data];
+    });
+    if (el('statAdmins')) el('statAdmins').textContent = admins;
+}
+
+function applyFilters() {
+    const rows = document.querySelectorAll('#usersBody tr[data-username]');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const username = row.dataset.username || '';
+        const fullname = row.dataset.fullname || '';
+        const email = row.dataset.email || '';
+        const matchSearch = (username + ' ' + fullname + ' ' + email).toLowerCase().includes(searchQuery);
+
+        let matchFilter = true;
+        const isAdmin = row.dataset.isAdmin === 'true';
+        const anyGranted = PERM_KEYS.some(k => row.dataset[k.data] === 'granted');
+        const anyDenied = PERM_KEYS.some(k => row.dataset[k.data] !== 'granted');
+
+        if (currentFilter === 'granted') {
+            matchFilter = anyGranted || isAdmin;
+        } else if (currentFilter === 'denied') {
+            matchFilter = anyDenied && !isAdmin;
+        }
+
+        if (matchSearch && matchFilter) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    const countEl = document.getElementById('visibleCount');
+    if (countEl) {
+        countEl.textContent = visibleCount + ' record' + (visibleCount === 1 ? '' : 's');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    updateStats();
+
+    const searchInput = document.getElementById('userSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            searchQuery = this.value.toLowerCase().trim();
+            applyFilters();
+        });
+    }
+
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentFilter = this.dataset.filter;
+            applyFilters();
+        });
+    });
+});
+
+// Maps a permission field name to its row dataset key
+const PERM_DATASET_MAP = {
+    road_edit_permission: 'roadEditPerm',
+    road_delete_permission: 'roadDeletePerm',
+    property_edit_permission: 'propEditPerm',
+    property_delete_permission: 'propDeletePerm',
+};
+
+function togglePerm(btn, userId, permName) {
+    btn.disabled = true;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+    fetch(`/manage-permissions/${userId}/toggle/${permName}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        if (data.success) {
+            const isGranted = data.new_value;
+            const container = btn.closest('.perm-action-cell');
+            const row = btn.closest('tr');
+
+            const datasetKey = PERM_DATASET_MAP[permName];
+            if (datasetKey) {
+                row.dataset[datasetKey] = isGranted ? 'granted' : 'denied';
+            }
+
+            if (isGranted) {
+                container.innerHTML = `
+                    <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '${userId}', '${permName}')">Revoke</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '${userId}', '${permName}')">Grant</button>
+                `;
+            }
+
+            updateStats();
+            applyFilters();
+        } else {
+            alert(data.error || "Failed to update permission.");
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        btn.disabled = false;
+        alert("An error occurred while updating permission.");
+    });
+
+}
+</script>
+{% endblock %}
+
+
+{% comment %} {% extends "base.html" %}
+{% load static %}
+// ================================== Manage Permission =======================
+
+{% block title %}Manage Permissions{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/user-list.css' %}?v=2">
+<style>
+.perm-action-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="page-wrapper">
+
+    <div class="page-content">
+
+        <!-- Summary Cards -->
+        <div class="stats-row">
+
+            <div class="stat-card animate-in animate-in-delay-1">
+                <div class="stat-info">
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value" id="statTotal">{{ users|length }}</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-2">
+                <div class="stat-info">
+                    <div class="stat-label">Road Permission</div>
+                    <div class="stat-value" id="statRoadGranted">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-3">
+                <div class="stat-info">
+                    <div class="stat-label">Property Permission</div>
+                    <div class="stat-value" id="statPropGranted">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-4">
+                <div class="stat-info">
+                    <div class="stat-label">Admins</div>
+                    <div class="stat-value" id="statAdmins">0</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Table Card -->
+        <div class="table-card animate-in" style="animation-delay:.25s;opacity:0;">
+
+            <div class="table-toolbar">
+                <div class="table-toolbar-left">
+                    <div class="table-toolbar-title">Manage Permissions</div>
+                    <div class="table-count" id="visibleCount">{{ users|length }} record{{ users|length|pluralize }}</div>
+                </div>
+                <div class="table-toolbar-right">
+                    <div class="search-box">
+                        <svg class="search-box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" id="userSearch" placeholder="Search users..." autocomplete="off">
+                    </div>
+                    <button class="filter-btn active" id="filterAll" data-filter="all">All</button>
+                    <button class="filter-btn" id="filterGranted" data-filter="granted">Granted</button>
+                    <button class="filter-btn" id="filterDenied" data-filter="denied">Not Granted</button>
+                </div>
+            </div>
+
+            <div class="data-table-wrap">
+                <table class="data-table" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Road Permission</th>
+                            <th>Property Permission</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody">
+                    {% for u in users %}
+                        <tr data-username="{{ u.username }}"
+                            data-fullname="{{ u.first_name }} {{ u.last_name }}"
+                            data-email="{{ u.email }}"
+                            data-role="{{ u.role }}"
+                            data-is-admin="{% if u.is_admin %}true{% else %}false{% endif %}"
+                            data-road-perm="{% if u.road_permission or u.is_admin %}granted{% else %}denied{% endif %}"
+                            data-prop-perm="{% if u.property_permission or u.is_admin %}granted{% else %}denied{% endif %}">
+
+                            <td>
+                                <div class="user-cell">
+                                    <div class="user-avatar">
+                                        {% if u.profile_image %}
+                                            <img src="{{ u.profile_image.url }}" alt="Profile">
+                                        {% else %}
+                                            <img src="{% static 'images/default-profile.png' %}" alt="Default profile">
+                                        {% endif %}
+                                        <span class="user-avatar-status {% if u.is_active %}online{% else %}offline{% endif %}"></span>
+                                    </div>
+                                    <div class="user-name-group">
+                                        <div class="user-fullname">
+                                            {% if u.first_name %}
+                                                {{ u.first_name }} {{ u.last_name }}
+                                            {% else %}
+                                                {{ u.username }}
+                                            {% endif %}
+                                            {% if u.id == request.user.id %}
+                                                <span class="you-badge">You</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="user-handle">@{{ u.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="user-email-col">{{ u.email }}</td>
+
+                            <td>
+                                <span class="role-badge role-{{ u.role }}">
+                                    {{ u.get_role_display }}
+                                </span>
+                            </td>
+
+                            <!-- Road Permission -->
+                            <td>
+                                <div class="perm-action-cell">
+                                    {% if u.is_admin %}
+                                        <span class="status-badge status-active">Granted</span>
+                                    {% elif u.id == request.user.id %}
+                                        {% if u.road_permission %}
+                                            <span class="status-badge status-active">Granted</span>
+                                        {% else %}
+                                            <span class="status-badge status-locked">Not Granted</span>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if u.road_permission %}
+                                            <span class="status-badge status-active">Granted</span>
+                                            <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'road_permission')">Revoke</button>
+                                        {% else %}
+                                            <span class="status-badge status-locked">Not Granted</span>
+                                            <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'road_permission')">Grant</button>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Property Permission -->
+                            <td>
+                                <div class="perm-action-cell">
+                                    {% if u.is_admin %}
+                                        <span class="status-badge status-active">Granted</span>
+                                    {% elif u.id == request.user.id %}
+                                        {% if u.property_permission %}
+                                            <span class="status-badge status-active">Granted</span>
+                                        {% else %}
+                                            <span class="status-badge status-locked">Not Granted</span>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if u.property_permission %}
+                                            <span class="status-badge status-active">Granted</span>
+                                            <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'property_permission')">Revoke</button>
+                                        {% else %}
+                                            <span class="status-badge status-locked">Not Granted</span>
+                                            <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'property_permission')">Grant</button>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">Users</div>
+                                    <div class="empty-state-text">No users found.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentFilter = 'all';
+let searchQuery = '';
+
+function updateStats() {
+    const rows = document.querySelectorAll('#usersBody tr[data-username]');
+    let roadGranted = 0;
+    let propGranted = 0;
+    let admins = 0;
+
+    rows.forEach(row => {
+        if (row.dataset.roadPerm === 'granted') roadGranted++;
+        if (row.dataset.propPerm === 'granted') propGranted++;
+        if (row.dataset.isAdmin === 'true' || row.dataset.role === 'admin') admins++;
+    });
+
+    const el = id => document.getElementById(id);
+    if (el('statRoadGranted')) el('statRoadGranted').textContent = roadGranted;
+    if (el('statPropGranted')) el('statPropGranted').textContent = propGranted;
+    if (el('statAdmins')) el('statAdmins').textContent = admins;
+}
+
+function applyFilters() {
+    const rows = document.querySelectorAll('#usersBody tr[data-username]');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const username = row.dataset.username || '';
+        const fullname = row.dataset.fullname || '';
+        const email = row.dataset.email || '';
+        const matchSearch = (username + ' ' + fullname + ' ' + email).toLowerCase().includes(searchQuery);
+
+        let matchFilter = true;
+        const isRoadGranted = row.dataset.roadPerm === 'granted';
+        const isPropGranted = row.dataset.propPerm === 'granted';
+        const isAdmin = row.dataset.isAdmin === 'true';
+
+        if (currentFilter === 'granted') {
+            matchFilter = isRoadGranted || isPropGranted || isAdmin;
+        } else if (currentFilter === 'denied') {
+            matchFilter = (!isRoadGranted || !isPropGranted) && !isAdmin;
+        }
+
+        if (matchSearch && matchFilter) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    const countEl = document.getElementById('visibleCount');
+    if (countEl) {
+        countEl.textContent = visibleCount + ' record' + (visibleCount === 1 ? '' : 's');
+    }
+}
+
+// Search Handler
+document.addEventListener('DOMContentLoaded', function () {
+    updateStats();
+
+    const searchInput = document.getElementById('userSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            searchQuery = this.value.toLowerCase().trim();
+            applyFilters();
+        });
+    }
+
+    // Filter Buttons Handler
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentFilter = this.dataset.filter;
+            applyFilters();
+        });
+    });
+});
+
+// Toggle Permission Handler
+function togglePerm(btn, userId, permName) {
+    btn.disabled = true;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+    fetch(`/manage-permissions/${userId}/toggle/${permName}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        if (data.success) {
+            const isGranted = data.new_value;
+            const container = btn.closest('.perm-action-cell');
+            const row = btn.closest('tr');
+
+            if (permName === 'road_permission') {
+                row.dataset.roadPerm = isGranted ? 'granted' : 'denied';
+            } else if (permName === 'property_permission') {
+                row.dataset.propPerm = isGranted ? 'granted' : 'denied';
+            }
+
+            if (isGranted) {
+                container.innerHTML = `
+                    <span class="status-badge status-active">Granted</span>
+                    <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '${userId}', '${permName}')">Revoke</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <span class="status-badge status-locked">Not Granted</span>
+                    <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '${userId}', '${permName}')">Grant</button>
+                `;
+            }
+
+            updateStats();
+            applyFilters();
+        } else {
+            alert(data.error || "Failed to update permission.");
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        btn.disabled = false;
+        alert("An error occurred while updating permission.");
+    });
+}
+</script>
+{% endblock %} {% endcomment %}

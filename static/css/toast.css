@@ -1,0 +1,103 @@
+/* ==========================================================================
+   toast.css — Toast notification component
+   Shared across all pages. No page-specific rules here.
+   ========================================================================== */
+
+.toast-container {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 360px;
+}
+
+.toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px #D9D9D9;
+    border-left: 4px solid var(--ink, #14163F);
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 13.5px;
+    color: var(--text, #14162B);
+    animation: toast-in 0.25s ease forwards;
+}
+
+.toast.toast-hide {
+    animation: toast-out 0.2s ease forwards;
+}
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toast-out {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(30px); }
+}
+
+/* Variants */
+.toast-success { border-left-color: #1F9D6F; }
+.toast-error   { border-left-color: #C0392B; }
+.toast-warning { border-left-color: #D9A400; }
+.toast-info    { border-left-color: #2563EB; }
+.toast-debug   { border-left-color: var(--muted, #6B7280); }
+
+/* Icon circle */
+.toast-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.toast-success .toast-icon { background: #1F9D6F; }
+.toast-error   .toast-icon { background: #C0392B; }
+.toast-warning .toast-icon { background: #D9A400; }
+.toast-info    .toast-icon { background: #2563EB; }
+.toast-debug   .toast-icon { background: var(--muted, #6B7280); }
+
+/* Body */
+.toast-text {
+    flex: 1;
+    line-height: 1.4;
+    padding-top: 1px;
+}
+
+/* Close button */
+.toast-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--muted, #6B7280);
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.toast-close:hover {
+    color: var(--text, #14162B);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .toast-container {
+        left: 16px;
+        right: 16px;
+        max-width: none;
+    }
+}

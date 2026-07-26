@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Feature Approvals — Maps{% endblock %}
+
+{% block extra_css %}
+<!-- We reuse the admin.css for general layout, and add a few specific styles for the list/map -->
+<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/request-list.css' %}?v=2">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    {% comment %} <div class="page-header">
+        <div class="page-header-left">
+            <div class="page-title">Road Permission Requests</div>
+            <div class="page-breadcrumb">
+                <a href="{% url 'home' %}">Home</a>
+                <span class="sep">›</span>
+                <span class="crumb-current">Approvals</span>
+            </div>
+        </div>
+        
+        {% if status_filter == 'rejected' and rejected_count > 0 %}
+        <div class="page-header-right">
+            <form method="POST" action="{% url 'purge_rejected_requests' %}" onsubmit="return confirm('Permanently delete all rejected requests? This cannot be undone.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Purge All Rejected</button>
+            </form>
+        </div>
+        {% endif %}
+    </div> {% endcomment %}
+
+    <div class="page-content">
+        <!-- Request overview -->
+        <div class="stats-row" aria-label="Request overview">
+            <div class="stat-card animate-in animate-in-delay-1">
+                <div class="stat-info">
+                    <div class="stat-label">Road Requests</div>
+                    {% comment %} <div class="stat-value">{{ road_pending|add:road_approved|add:road_rejected }}</div> {% endcomment %}
+                    <div class="stat-value">{{ road_pending }}</div>
+                </div>
+            </div>
+            <div class="stat-card animate-in animate-in-delay-2">
+                <div class="stat-info">
+                    <div class="stat-label">Property Requests</div>
+                    {% comment %} <div class="stat-value">{{ property_pending|add:property_approved|add:property_rejected }}</div> {% endcomment %}
+                    <div class="stat-value">{{ property_pending }}</div>
+                </div>
+            </div>
+            <div class="stat-card stat-card--pending animate-in animate-in-delay-3">
+                <div class="stat-info">
+                    <div class="stat-label">Pending Approval</div>
+                    <div class="stat-value">{{ pending_count }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter and search toolbar -->
+        <div class="requests-toolbar animate-in" style="animation-delay:.25s;opacity:0;">
+            <div class="requests-toolbar-heading">
+                <div class="requests-toolbar-title">feature requests</div>
+                <div class="requests-toolbar-count">{{ requests|length }} request{{ requests|length|pluralize }} shown</div>
+            </div>
+            <div class="requests-toolbar-controls">
+                <div class="search-box">
+                    <svg class="search-box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="search" id="requestSearch" placeholder="Search roads, properties, or submitters..." autocomplete="off" aria-label="Search feature requests">
+                </div>
+                <div class="filter-tabs" aria-label="Filter requests by status">
+                    <a href="?status=pending" class="filter-tab {% if status_filter == 'pending' %}active{% endif %}">Pending <span>{{ pending_count }}</span></a>
+                    <a href="?status=approved" class="filter-tab {% if status_filter == 'approved' %}active{% endif %}">Approved <span>{{ approved_count }}</span></a>
+                    <a href="?status=rejected" class="filter-tab {% if status_filter == 'rejected' %}active{% endif %}">Rejected <span>{{ rejected_count }}</span></a>
+                    <a href="?status=all" class="filter-tab {% if status_filter == 'all' %}active{% endif %}">All</a>
+                </div>
+            </div>
+        </div>
+
+        {% if requests %}
+            {% for req in requests %}
+            <div class="request-card animate-in" data-req-id="{{ req.id }}" data-search="{{ req.name }} {{ req.creator.username }} {{ req.description }}">
+                <div class="request-header">
+                    <div class="request-header-info">
+                        <div class="request-title">
+                            {% if req.name %}{{ req.name }}{% else %}Unnamed {{ req.type_label }}{% endif %}
+                            {% if req.delete_requested %}<span class="badge-delete">Deletion Requested</span>{% endif %}
+                        </div>
+                        <div class="request-meta">
+                            Submitted by <b>{{ req.creator.username }}</b> on {{ req.created_at|date:"M d, Y H:i" }}
+                        </div>
+                    </div>
+                    <div class="request-header-actions">
+                        <span class="status-badge status-badge--{{ req.status }}">{{ req.status }}</span>
+                        <button type="button" class="btn-toggle toggle-expand" aria-expanded="false">View details</button>
+                    </div>
+                </div>
+
+                <!-- Hidden JSON data for the mini-map script to read -->
+                {{ req.poly_data|json_script:req.id }}
+
+                
+        <div class="request-body">
+            <div class="request-details">
+
+                {% if req.delete_requested %}
+                    <div class="compare-empty-banner delete-request-banner">
+                        <span class="badge-delete">Deletion Requested</span>
+                        The creator wants this {{ req.type_label|lower }} removed from the public map. No changes to compare — review the road below before confirming.
+                    </div>
+                {% elif req.published_snapshot %}
+                    <div class="compare-section">
+                        <div class="compare-col">
+                            <h5 class="compare-heading">Previous</h5>
+                            <dl class="compare-list">
+                                <div class="compare-row">
+                                    <dt>Name</dt><dd>{{ req.published_snapshot.name|default:"—" }}</dd>
+                                </div>
+                                <div class="compare-row">
+                                    <dt>Description</dt><dd>{{ req.published_snapshot.description|default:"—" }}</dd>
+                                </div>
+                                <div class="compare-row">
+                                    <dt>Color</dt><dd>{{ req.published_snapshot.color|default:"—" }}</dd>
+                                </div>
+                                <div class="compare-row">
+                                    <dt>Width</dt><dd>{{ req.published_snapshot.stroke_width|default:"—" }} px</dd>
+                                </div>
+                            </dl>
+                        </div>
+                        <div class="compare-col">
+                            <h5 class="compare-heading">Updated</h5>
+                            <dl class="compare-list">
+                                <div class="compare-row"><dt>Name</dt><dd>{{ req.name }}</dd></div>
+                                <div class="compare-row"><dt>Description</dt><dd>{{ req.description }}</dd></div>
+                                <div class="compare-row"><dt>Color</dt><dd>{{ req.color }}</dd></div>
+                                <div class="compare-row"><dt>Width</dt><dd>{{ req.stroke_width }} px</dd></div>
+                            </dl>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="compare-empty-banner">
+                        <span class="badge-new">New</span> This is a new submission — nothing to compare yet.
+                    </div>
+                {% endif %}
+
+                <div class="detail-section">
+                    <h4 class="detail-heading">Details</h4>
+                    <p class="detail-description">
+                        {{ req.description|default:"No description provided." }}
+                    </p>
+                    <div class="pill-group">
+                        <span class="style-pill">
+                            <span class="color-swatch" style="background:{{ req.color }}"></span>
+                            {{ req.color }}
+                        </span>
+                        <span class="style-pill">Width: {{ req.stroke_width }}px</span>
+                        <span class="style-pill">Opacity: {% widthratio req.opacity 1 100 %}%</span>
+                        <span class="style-pill">Style: {{ req.line_style }}</span>
+                        {% if req.fill_color %}
+                            <span class="style-pill">
+                                <span class="color-swatch" style="background:{{ req.fill_color }}"></span>
+                                Fill: {{ req.fill_color }}
+                            </span>
+                            <span class="style-pill">Fill Opacity: {% widthratio req.fill_opacity 1 100 %}%</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if req.status == 'pending' %}
+                    <div class="action-bar">
+                        {% if req.delete_requested %}
+                            <div class="delete-request-banner">
+                                This is a deletion request — approving will permanently remove this road from the public map.
+                            </div>
+                        {% endif %}
+                            <form method="POST" action="{% url 'review_polyline_request' req.id %}" class="action-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="approve">
+                                <button type="submit" class="btn-approve">
+                                    {% if req.delete_requested %}Confirm Deletion{% else %}Approve &amp; Publish{% endif %}
+                                </button>
+                            </form>
+
+                        <form method="POST" action="{% url 'review_polyline_request' req.id %}" class="action-form action-form--grow" onsubmit="return validateReject(this);">
+                            {% csrf_token %}
+                                <input type="hidden" name="action" value="reject">
+                                <div class="reject-row">
+                                    <input type="text" name="review_note" placeholder="Reason for rejection (required)" required class="reject-input">
+                                    <button type="submit" class="btn-reject">
+                                        {% if req.delete_requested %}Deny Deletion{% else %}Reject{% endif %}
+                                    </button>
+                                </div>
+                        </form>
+                    </div>
+                
+                {% else %}
+                    <div class="review-info">
+                        <div class="review-info-label">Review Information</div>
+                        <div class="review-info-body">
+                            Reviewed by <b>{{ req.reviewer.username|default:"System" }}</b> on {{ req.reviewed_at|date:"M d, Y H:i" }}
+                        </div>
+                        {% if req.review_note %}
+                            <div class="review-info-note"><b>Note:</b> {{ req.review_note }}</div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Lazy Map Container -->
+            <!-- Lazy Map Container -->
+            <div class="map-comparison">
+                {% if req.delete_requested %}
+                    <div class="map-col map-col--single">
+                        <h4 class="map-heading">{{ req.type_label }} to be Deleted</h4>
+                        <div class="request-map-container" id="old-map-{{ req.id }}"></div>
+                    </div>
+                {% elif req.published_snapshot %}
+                    <div class="map-col">
+                        <h4 class="map-heading">Previous Approved</h4>
+                        <div class="request-map-container" id="old-map-{{ req.id }}"></div>
+                    </div>
+                    <div class="map-col">
+                        <h4 class="map-heading">Updated Version</h4>
+                        <div class="request-map-container" id="new-map-{{ req.id }}"></div>
+                    </div>
+                {% else %}
+                    <div class="map-col map-col--single">
+                        <h4 class="map-heading">New {{ req.type_label }} Submission</h4>
+                        <div class="request-map-container" id="new-map-{{ req.id }}"></div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state" role="status">
+        <div class="empty-state-icon" aria-hidden="true">⌁</div>
+        <div class="empty-state-title">No feature requests found</div>
+        <div class="empty-state-text">There are no requests matching this status right now.</div>
+    </div>
+{% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet-textpath@1.2.3/leaflet.textpath.js"></script>
+<script>
+    function validateReject(form) {
+        const note = form.querySelector('input[name="review_note"]').value.trim();
+        if (!note) {
+            alert("Please provide a reason for rejecting this request.");
+            return false;
+        }
+        return confirm("Reject this request? It will be kept for audit but not published.");
+    }
+
+    // Lazy Map Management
+    const activeMaps = new Map();
+
+    function getLeafletStyle(data) {
+        let dashArray = null;
+        if (data.line_style === 'dashed') dashArray = '10, 10';
+        if (data.line_style === 'dotted') dashArray = '2, 8';
+
+        const style = {
+            color: data.color,
+            weight: data.weight,
+            opacity: data.opacity,
+            dashArray: dashArray,
+            lineCap: 'round',
+            lineJoin: 'round'
+        };
+
+        if (data.fill_color) {
+            style.fillColor = data.fill_color;
+            style.fillOpacity = data.fill_opacity;
+        }
+
+        return style;
+    }
+
+function buildAdminLayer(coords, styleData) {
+    return styleData.feature_type === 'polygon'
+        ? L.polygon(coords, getLeafletStyle(styleData))
+        : L.polyline(coords, getLeafletStyle(styleData));
+}
+
+    document.querySelectorAll('.toggle-expand').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const card = this.closest('.request-card');
+            const body = card.querySelector('.request-body');
+            const reqId = card.dataset.reqId;
+            const oldMapId = 'old-map-' + reqId;
+            const newMapId = 'new-map-' + reqId;
+            
+            if (body.classList.contains('open')) {
+                // Collapse & Destroy Map
+                body.classList.remove('open');
+                this.textContent = 'View details';
+                this.setAttribute('aria-expanded', 'false');
+                if (activeMaps.has(reqId)) {
+
+                    const maps = activeMaps.get(reqId);
+
+                    if (maps.oldMap) {
+                        maps.oldMap.remove();
+                    }
+
+                    if (maps.newMap) {
+                        maps.newMap.remove();
+                    }
+
+                    activeMaps.delete(reqId);
+                }
+            } else {
+                // Expand & Initialize Map
+                body.classList.add('open');
+                this.textContent = 'Hide';
+                this.setAttribute('aria-expanded', 'true');
+                
+                // Read JSON from script tag
+                const jsonText = document.getElementById(reqId).textContent;
+                const data = JSON.parse(jsonText);
+
+                const current = data.current;
+                const previous = data.previous;
+                
+                // Init map
+                // ---------- OLD MAP ----------
+                let oldMap = null;
+                if (previous && document.getElementById(oldMapId)) {
+                    oldMap = L.map(oldMapId, { scrollWheelZoom: false });
+                    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(oldMap);
+                    const oldLine = buildAdminLayer(previous.coordinates, {
+                        feature_type: previous.feature_type,
+                        color: previous.color,
+                        weight: previous.stroke_width,
+                        opacity: previous.opacity,
+                        line_style: previous.line_style,
+                        fill_color: previous.fill_color,
+                        fill_opacity: previous.fill_opacity
+                    }).addTo(oldMap);
+                    oldMap.fitBounds(oldLine.getBounds(), { padding: [20, 20] });
+                    oldMap.invalidateSize();
+                }
+
+                // ---------- NEW MAP ----------
+                let newMap = null;
+                if (document.getElementById(newMapId)) {
+                    newMap = L.map(newMapId, { scrollWheelZoom: false });
+                    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(newMap);
+                    const newLine = buildAdminLayer(current.coords, current).addTo(newMap);
+                    newMap.fitBounds(newLine.getBounds(), { padding: [20, 20] });
+                    newMap.invalidateSize();
+                }
+
+                activeMaps.set(reqId, { oldMap: oldMap, newMap: newMap });
+                            }
+                        });
+                    });
+
+    // Client-side search complements the server-side status filters.
+    (function () {
+        const input = document.getElementById('requestSearch');
+        const cards = document.querySelectorAll('.request-card[data-search]');
+        if (!input) return;
+
+        input.addEventListener('input', function () {
+            const query = this.value.toLowerCase().trim();
+            cards.forEach(function (card) {
+                card.style.display = card.dataset.search.toLowerCase().includes(query) ? '' : 'none';
+            });
+        });
+    })();
+</script>
+{% endblock %}

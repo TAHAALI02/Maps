@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Delete Permissions{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/user-list.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+    <div class="page-content">
+
+        <div class="stats-row">
+
+            <div class="stat-card animate-in animate-in-delay-1">
+                <div class="stat-info">
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value">{{ users|length }}</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-2">
+                <div class="stat-info">
+                    <div class="stat-label">Permission Granted</div>
+                    <div class="stat-value" id="statGranted">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-3">
+                <div class="stat-info">
+                    <div class="stat-label">Not Granted</div>
+                    <div class="stat-value" id="statDenied">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card animate-in animate-in-delay-4">
+                <div class="stat-info">
+                    <div class="stat-label">Admins</div>
+                    <div class="stat-value" id="statAdmins">0</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="table-card animate-in" style="animation-delay:.25s;opacity:0;">
+
+            <div class="table-toolbar">
+                <div class="table-toolbar-left">
+                    <div class="table-toolbar-title">Delete Permissions</div>
+                    <div class="table-count">{{ users|length }} record{{ users|length|pluralize }}</div>
+                </div>
+                <div class="table-toolbar-right">
+                    <div class="search-box">
+                        <svg class="search-box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" id="userSearch" placeholder="Search users..." autocomplete="off">
+                    </div>
+                    <button class="filter-btn" id="filterAll" data-filter="all">All</button>
+                    <button class="filter-btn" id="filterGranted" data-filter="granted">Granted</button>
+                    <button class="filter-btn" id="filterDenied" data-filter="denied">Not Granted</button>
+                </div>
+            </div>
+
+            <div class="data-table-wrap">
+                <table class="data-table" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Delete Permission</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody">
+                    {% for u in users %}
+                        <tr data-username="{{ u.username }}"
+                            data-fullname="{{ u.first_name }} {{ u.last_name }}"
+                            data-email="{{ u.email }}"
+                            data-role="{{ u.role }}"
+                            data-status="{% if u.delete_roads %}granted{% else %}denied{% endif %}">
+
+                            <td>
+                                <div class="user-cell">
+                                    <div class="user-avatar">
+                                        {% if u.profile_image %}
+                                            <img src="{{ u.profile_image.url }}" alt="Profile">
+                                        {% else %}
+                                            <img src="{% static 'images/default-profile.png' %}" alt="Default profile">
+                                        {% endif %}
+                                        <span class="user-avatar-status {% if u.is_active %}online{% else %}offline{% endif %}"></span>
+                                    </div>
+                                    <div class="user-name-group">
+                                        <div class="user-fullname">
+                                            {% if u.first_name %}
+                                                {{ u.first_name }} {{ u.last_name }}
+                                            {% else %}
+                                                {{ u.username }}
+                                            {% endif %}
+                                            {% if u.id == request.user.id %}
+                                                <span class="you-badge">You</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="user-handle">@{{ u.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="user-email-col">{{ u.email }}</td>
+
+                            <td>
+                                <span class="role-badge role-{{ u.role }}">
+                                    {{ u.get_role_display }}
+                                </span>
+                            </td>
+
+                            <td>
+                            {% if u.is_admin %}
+                                <span class="status-badge status-active" style='select:None;'>Granted</span>
+                            {% else %}
+                                {% if u.delete_roads %}
+                                    <span class="status-badge status-active">Granted</span>
+                                {% else %}
+                                    <span class="status-badge status-locked">Not Granted</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if u.id == request.user.id %}
+                                <span class="action-self-label">&mdash; You</span>
+                            {% elif u.is_admin %}
+                                <span class="action-self-label">&mdash; Admin</span>
+                            {% else %}
+                                <form method="post" action="{% url 'toggle_delete_permission' u.id %}">
+                                    {% csrf_token %}
+                                    {% if u.delete_roads %}
+                                        <button class="action-btn action-lock" type="submit">Revoke</button>
+                                    {% else %}
+                                        <button class="action-btn action-unlock" type="submit">Grant</button>
+                                    {% endif %}
+                                </form>
+                            {% endif %}
+                        </td>
+
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">Users</div>
+                                    <div class="empty-state-text">No users found.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const rows = document.querySelectorAll("#usersBody tr[data-status]");
+    let granted = 0, denied = 0, admins = 0;
+    rows.forEach(function (row) {
+        if (row.dataset.status === "granted") granted++;
+        else denied++;
+        if (row.dataset.role === "admin") admins++;
+    });
+    const el = (id) => document.getElementById(id);
+    if (el("statGranted")) el("statGranted").textContent = granted;
+    if (el("statDenied")) el("statDenied").textContent = denied;
+    if (el("statAdmins")) el("statAdmins").textContent = admins;
+})();
+
+(function () {
+    const input = document.getElementById("userSearch");
+    const rows = document.querySelectorAll("#usersBody tr[data-username]");
+    if (!input) return;
+
+    input.addEventListener("input", function () {
+        const q = this.value.toLowerCase().trim();
+        rows.forEach(function (row) {
+            const text = (row.dataset.username + " " + row.dataset.fullname + " " + row.dataset.email).toLowerCase();
+            row.style.display = text.includes(q) ? "" : "none";
+        });
+    });
+})();
+
+(function () {
+    const btns = document.querySelectorAll(".filter-btn[data-filter]");
+    const rows = document.querySelectorAll("#usersBody tr[data-status]");
+
+    btns.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            btns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            const filter = btn.dataset.filter;
+            rows.forEach(function (row) {
+                row.style.display = filter === "all" || row.dataset.status === filter ? "" : "none";
+            });
+        });
+    });
+
+    const allBtn = document.getElementById("filterAll");
+    if (allBtn) allBtn.classList.add("active");
+})();
+</script>
+{% endblock %}
