@@ -570,3 +570,11 @@ body.map-page{
         -1px  1px 0 #fff,
          1px  1px 0 #fff;
 }
+
+
+/* This is for hiding border of pending features */
+.leaflet-interactive:focus,
+path.leaflet-interactive:focus,
+.leaflet-container path:focus {
+    outline: none;
+}

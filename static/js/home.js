@@ -328,7 +328,9 @@ function showFeaturePopup(layer, feature, isMine, hasEditInProgress) {
 
     node.querySelector('.road-popup-meta').textContent = 'Approved: ' + (feature.published_at || 'Unknown');
 
-    const typeCanDelete = feature.feature_type === 'polyline' ? canDeleteRoads : canDeleteProperties;
+    const isLine = feature.feature_type === 'polyline';
+    const typeCanEdit = isLine ? canEditRoads : canEditProperties;
+    const typeCanDelete = isLine ? canDeleteRoads : canDeleteProperties;
     // const canDelete = isSuperuser || (isMine && typeCanDelete);
     // const canEdit   = isSuperuser || (isMine && typeCanDelete);
     const canEdit = isSuperuser || (isMine && typeCanEdit);
@@ -513,7 +515,11 @@ function renderFeature(feature, mode) {
         } else {
             const tooltipClass = feature.status === 'rejected' ? 'road-tooltip-rejected' : 'road-tooltip-pending';
             layer.bindTooltip(`${feature.status} — click to edit`, { sticky: true, className: tooltipClass });
-            layer.on('click', () => openEditPanel(layer, feature, feature.status));
+            layer.on('click', () => {
+                layer._realStyle = { color: style.color, fillColor: style.fillColor };
+                if (layer.setStyle) layer.setStyle({ color: '#00ffff', fillColor: '#00ffff' });
+                openEditPanel(layer, feature, feature.status);
+            });
         }
     }
 
@@ -722,9 +728,14 @@ function closePolylinePanel() {
     document.getElementById("stylePanel").classList.remove("open");
 
     if (editingRequestId && currentPolyline) {
-        currentPolyline.editing.disable();
+        if (currentPolyline.editing && currentPolyline.editing.enabled()) {
+            currentPolyline.editing.disable();
+        }
         if (currentPolyline._originalLatLngs) {
             currentPolyline.setLatLngs(currentPolyline._originalLatLngs);
+        }
+        if (currentPolyline._realStyle && currentPolyline.setStyle) {
+            currentPolyline.setStyle(currentPolyline._realStyle);
         }
     } else if (!editingRequestId && document.getElementById("polylineStatusBadge").style.display === "none") {
         if (currentPolyline) drawnItems.removeLayer(currentPolyline);

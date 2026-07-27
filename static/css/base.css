@@ -365,14 +365,14 @@ body {
     border-radius: 8px;
     font-size: 12px;
     font-weight: 400;
-    color: var(--text);
+    color: var(--danger);
     cursor: pointer;
     font-family: inherit;
     transition: background 0.15s ease;
 }
 
 .dropdown-logout-btn svg {
-    color: var(--muted);
+    color: var(--danger);
 }
 
 .dropdown-logout-btn:hover { 
