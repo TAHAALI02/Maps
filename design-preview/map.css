@@ -1,0 +1,414 @@
+/* =============================================================
+   MAP-RELATED PLAIN CSS  (copy this whole file into your real
+   Django project, e.g. static/css/map-redesign.css)
+
+   Every class in here is written with PLAIN, regular class names
+   so it drops straight onto real Leaflet.js DOM elements — no
+   Tailwind, no build step. These styles cover:
+     - the map container / canvas
+     - map controls (zoom, layers)
+     - the drawing toolbar (Start / Undo / Clear / Submit)
+     - the live distance + point counter
+     - click-to-edit vertex points on the drawn line
+     - map overlays (route detail panel)
+
+   Design tokens are declared as CSS variables so they stay in
+   sync with the Tailwind UI outside the map.
+   ============================================================= */
+
+:root {
+  --map-surface: #ffffff;
+  --map-canvas-bg: #eef1f5;
+  --map-grid: #e2e7ee;
+  --map-border: #e5e7eb;
+  --map-text: #1f2937;
+  --map-muted: #6b7280;
+  --map-accent: #0d9488;         /* calm teal accent */
+  --map-accent-soft: #ccfbf1;
+  --map-danger: #dc2626;
+  --map-shadow: 0 1px 2px rgba(16, 24, 40, 0.04),
+                0 4px 16px rgba(16, 24, 40, 0.06);
+  --map-radius: 14px;
+  --map-radius-sm: 10px;
+}
+
+/* ---------- Map container / canvas ---------------------------
+   In your real app this is the #map element Leaflet mounts into.
+   The grid background here is only a PLACEHOLDER stand-in for
+   real tiles — delete it when you wire up Leaflet. */
+.map-canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background-color: var(--map-canvas-bg);
+  background-image:
+    linear-gradient(var(--map-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--map-grid) 1px, transparent 1px);
+  background-size: 44px 44px;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+/* Faint placeholder "roads" + active drawn route live in an SVG */
+.map-route-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.map-route-bg-path {
+  fill: none;
+  stroke: #d3d9e2;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.map-route-active {
+  fill: none;
+  stroke: var(--map-accent);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Click-to-edit vertex points ----------------------
+   The little draggable handles that sit on each point of the
+   line while editing. */
+.map-edit-point {
+  fill: var(--map-surface);
+  stroke: var(--map-accent);
+  stroke-width: 3;
+  cursor: grab;
+  transition: r 0.12s ease, fill 0.12s ease;
+}
+.map-edit-point:hover {
+  fill: var(--map-accent-soft);
+}
+.map-edit-point:active {
+  cursor: grabbing;
+}
+
+/* ---------- Map controls (zoom / layers) ---------------------
+   Top-right stacked controls. Mirrors Leaflet's own control
+   markup so you can restyle .leaflet-bar with these rules. */
+.map-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 500;
+}
+.map-ctrl-group {
+  display: flex;
+  flex-direction: column;
+  background: var(--map-surface);
+  border: 1px solid var(--map-border);
+  border-radius: var(--map-radius-sm);
+  box-shadow: var(--map-shadow);
+  overflow: hidden;
+}
+.map-ctrl-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--map-surface);
+  color: var(--map-text);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.map-ctrl-btn + .map-ctrl-btn {
+  border-top: 1px solid var(--map-border);
+}
+.map-ctrl-btn:hover {
+  background: #f4f6f9;
+}
+.map-ctrl-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Drawing toolbar ----------------------------------
+   Top-center floating pill: Start Drawing / Undo / Clear / Submit */
+.map-drawing-toolbar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--map-surface);
+  border: 1px solid var(--map-border);
+  border-radius: 999px;
+  box-shadow: var(--map-shadow);
+  z-index: 600;
+}
+.map-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--map-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.map-tool-btn svg {
+  width: 15px;
+  height: 15px;
+}
+.map-tool-btn:hover {
+  background: #f4f6f9;
+}
+.map-tool-btn--primary {
+  background: var(--map-accent);
+  color: #ffffff;
+}
+.map-tool-btn--primary:hover {
+  background: #0b8177;
+}
+.map-tool-btn--danger {
+  color: var(--map-danger);
+}
+.map-tool-btn--danger:hover {
+  background: #fef2f2;
+}
+.map-tool-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.map-tool-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 2px;
+  background: var(--map-border);
+}
+
+/* ---------- Live distance + point counter --------------------
+   Sits under the drawing toolbar while a line is being drawn. */
+.map-stat-badge {
+  position: absolute;
+  top: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: var(--map-surface);
+  border: 1px solid var(--map-border);
+  border-radius: 999px;
+  box-shadow: var(--map-shadow);
+  overflow: hidden;
+  z-index: 600;
+}
+.map-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 18px;
+}
+.map-stat-item + .map-stat-item {
+  border-left: 1px solid var(--map-border);
+}
+.map-stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--map-text);
+  line-height: 1.2;
+}
+.map-stat-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--map-muted);
+}
+
+/* ---------- Route detail panel (map overlay) -----------------
+   Floating card shown when a saved route is selected. */
+.map-detail-panel {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  width: 300px;
+  max-width: calc(100% - 32px);
+  background: var(--map-surface);
+  border: 1px solid var(--map-border);
+  border-radius: var(--map-radius);
+  box-shadow: var(--map-shadow);
+  overflow: hidden;
+  z-index: 550;
+  font-family: "Inter", system-ui, sans-serif;
+}
+.map-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px;
+}
+.map-detail-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--map-text);
+  margin: 0;
+}
+.map-detail-date {
+  font-size: 12px;
+  color: var(--map-muted);
+  margin-top: 2px;
+}
+.map-detail-close {
+  border: none;
+  background: transparent;
+  color: var(--map-muted);
+  cursor: pointer;
+  padding: 2px;
+  line-height: 0;
+  border-radius: 6px;
+}
+.map-detail-close:hover {
+  background: #f4f6f9;
+  color: var(--map-text);
+}
+.map-detail-body {
+  padding: 0 16px 16px;
+}
+.map-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-top: 1px solid var(--map-border);
+  font-size: 13px;
+}
+.map-detail-row-label {
+  color: var(--map-muted);
+}
+.map-detail-row-value {
+  color: var(--map-text);
+  font-weight: 600;
+}
+.map-detail-reason {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--map-radius-sm);
+  font-size: 12px;
+  line-height: 1.5;
+  color: #991b1b;
+}
+.map-detail-reason strong {
+  display: block;
+  margin-bottom: 2px;
+  font-weight: 700;
+}
+
+/* ---------- Status badges used INSIDE the map overlay --------
+   (The sidebar/admin badges outside the map use Tailwind — these
+   plain-CSS versions are for Leaflet overlays only.) */
+.map-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: capitalize;
+}
+.map-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.map-badge--draft    { background: #f3f4f6; color: #4b5563; }
+.map-badge--pending  { background: #fef3c7; color: #92400e; }
+.map-badge--approved { background: #dcfce7; color: #166534; }
+.map-badge--rejected { background: #fee2e2; color: #991b1b; }
+
+/* ---------- Empty hint over the map --------------------------- */
+.map-empty-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 32px;
+  text-align: center;
+  color: var(--map-muted);
+  pointer-events: none;
+}
+.map-empty-hint-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--map-surface);
+  border: 1px solid var(--map-border);
+  color: var(--map-accent);
+  box-shadow: var(--map-shadow);
+}
+.map-empty-hint-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--map-text);
+}
+.map-empty-hint-text {
+  font-size: 13px;
+  max-width: 240px;
+  line-height: 1.5;
+}
+
+/* ---------- Faux Leaflet attribution (realism) --------------- */
+.map-attribution {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border-top-left-radius: 6px;
+  font-size: 10px;
+  color: var(--map-muted);
+  z-index: 400;
+}
+
+/* ---------- Small screens ------------------------------------ */
+@media (max-width: 640px) {
+  .map-detail-panel {
+    left: 12px;
+    right: 12px;
+    bottom: 84px;
+    width: auto;
+  }
+  .map-drawing-toolbar {
+    top: auto;
+    bottom: 84px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: calc(100% - 24px);
+  }
+  .map-stat-badge {
+    top: 16px;
+  }
+}
