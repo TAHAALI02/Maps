@@ -512,7 +512,7 @@ body {
 }
 
 .action-unlock {
-    background: var(--success-soft);
+    /* background: var(--success-soft); */
     color: var(--ink);
 }
 

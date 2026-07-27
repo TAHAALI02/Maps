@@ -12,6 +12,13 @@
     align-items: center;
     gap: 10px;
 }
+.perm-clickable {
+    cursor: pointer;
+    transition: opacity var(--transition); 
+}
+.perm-clickable:hover {
+    opacity: 0.7;
+}
 </style>
 {% endblock %}
 
@@ -22,14 +29,14 @@
     <div class="page-content">
 
         <!-- Summary Cards -->
-        <div class="stats-row" style="grid-template-columns: repeat(5, 1fr);">
+        <div class="stats-row" style="grid-template-columns: repeat(4, 1fr);">
 
-            <div class="stat-card animate-in animate-in-delay-1">
+            {% comment %} <div class="stat-card animate-in animate-in-delay-1">
                 <div class="stat-info">
                     <div class="stat-label">Total Users</div>
                     <div class="stat-value" id="statTotal">{{ users|length }}</div>
                 </div>
-            </div>
+            </div> {% endcomment %}
 
             <div class="stat-card animate-in animate-in-delay-2">
                 <div class="stat-info">
@@ -88,7 +95,7 @@
                     <thead>
                         <tr>
                             <th>User</th>
-                            <th>Email</th>
+                            {% comment %} <th>Email</th> {% endcomment %}
                             <th>Role</th>
                             <th>Road Edit</th>
                             <th>Road Delete</th>
@@ -134,7 +141,7 @@
                                 </div>
                             </td>
 
-                            <td class="user-email-col">{{ u.email }}</td>
+                            {% comment %} <td class="user-email-col">{{ u.email }}</td> {% endcomment %}
 
                             <td>
                                 <span class="role-badge role-{{ u.role }}">
@@ -142,6 +149,7 @@
                                 </span>
                             </td>
 
+                            <!-- Road Edit Permission -->
                             <!-- Road Edit Permission -->
                             <td>
                                 <div class="perm-action-cell">
@@ -153,51 +161,50 @@
                                         </span>
                                     {% else %}
                                         {% if u.road_edit_permission %}
-                                            <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'road_edit_permission')">Revoke</button>
+                                            <span class="status-badge status-active perm-clickable" onclick="togglePerm(this, '{{ u.id }}', 'road_edit_permission')">Granted</span>
                                         {% else %}
                                             <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'road_edit_permission')">Grant</button>
                                         {% endif %}
                                     {% endif %}
                                 </div>
                             </td>
-                            </td>
+                            
 
                             <!-- Road Delete Permission -->
-                            <!-- Road Edit Permission -->
                             <td>
                                 <div class="perm-action-cell">
-                                    {% if u.is_admin %}
+                                    {% comment %} {% if u.is_admin %}
                                         <span class="status-badge status-active">Granted</span>
                                     {% elif u.id == request.user.id %}
                                         <span class="status-badge {% if u.road_delete_permission %}status-active{% else %}status-locked{% endif %}">
                                             {% if u.road_delete_permission %}Granted{% else %}Not Granted{% endif %}
                                         </span>
-                                    {% else %}
-                                        {% if u.road_edit_permission %}
-                                            <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'road_delete_permission')">Revoke</button>
+                                    {% else %} {% endcomment %}
+                                        {% if u.road_delete_permission %}
+                                            <span class="status-badge status-active perm-clickable" onclick="togglePerm(this, '{{ u.id }}', 'road_delete_permission')">Granted</span>
                                         {% else %}
                                             <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'road_delete_permission')">Grant</button>
                                         {% endif %}
-                                    {% endif %}
+                                    {% comment %} {% endif %} {% endcomment %}
                                 </div>
                             </td>
                             
                             <!-- Property Edit Permission -->
                             <td>
                                 <div class="perm-action-cell">
-                                    {% if u.is_admin %}
+                                    {% comment %} {% if u.is_admin %}
                                         <span class="status-badge status-active">Granted</span>
                                     {% elif u.id == request.user.id %}
                                         <span class="status-badge {% if u.road_edit_permission %}status-active{% else %}status-locked{% endif %}">
                                             {% if u.property_edit_permission %}Granted{% else %}Not Granted{% endif %}
                                         </span>
-                                    {% else %}
+                                    {% else %} {% endcomment %}
                                         {% if u.property_edit_permission %}
-                                            <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'property_edit_permission')">Revoke</button>
+                                            <span class="status-badge status-active perm-clickable" onclick="togglePerm(this, '{{ u.id }}', 'property_edit_permission')">Granted</span>
                                         {% else %}
                                             <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'property_edit_permission')">Grant</button>
                                         {% endif %}
-                                    {% endif %}
+                                    {% comment %} {% endif %} {% endcomment %}
                                 </div>
                             </td>
                             
@@ -206,19 +213,19 @@
                             <!-- Property Delete Permission -->
                             <td>
                                 <div class="perm-action-cell">
-                                    {% if u.is_admin %}
+                                    {% comment %} {% if u.is_admin %}
                                         <span class="status-badge status-active">Granted</span>
                                     {% elif u.id == request.user.id %}
                                         <span class="status-badge {% if u.road_delete_permission %}status-active{% else %}status-locked{% endif %}">
                                             {% if u.property_delete_permission %}Granted{% else %}Not Granted{% endif %}
                                         </span>
-                                    {% else %}
+                                    {% else %} {% endcomment %}
                                         {% if u.property_delete_permission %}
-                                            <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'property_delete_permission')">Revoke</button>
+                                            <span class="status-badge status-active perm-clickable" onclick="togglePerm(this, '{{ u.id }}', 'property_delete_permission')">Granted</span>
                                         {% else %}
                                             <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '{{ u.id }}', 'property_delete_permission')">Grant</button>
                                         {% endif %}
-                                    {% endif %}
+                                    {% comment %} {% endif %} {% endcomment %}
                                 </div>
                             </td>
                             
@@ -365,13 +372,9 @@ function togglePerm(btn, userId, permName) {
             }
 
             if (isGranted) {
-                container.innerHTML = `
-                    <button class="action-btn action-lock" type="button" onclick="togglePerm(this, '${userId}', '${permName}')">Revoke</button>
-                `;
+                container.innerHTML = `<span class="status-badge status-active perm-clickable" onclick="togglePerm(this, '${userId}', '${permName}')">Granted</span>`;
             } else {
-                container.innerHTML = `
-                    <button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '${userId}', '${permName}')">Grant</button>
-                `;
+                container.innerHTML = `<button class="action-btn action-unlock" type="button" onclick="togglePerm(this, '${userId}', '${permName}')">Grant</button>`;
             }
 
             updateStats();

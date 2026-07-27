@@ -829,13 +829,13 @@ def edit_feature_request(request, pk):
 # ============================================================================================
 # Granular Permissions Management
 
-@admin_required
+# @admin_required
 def manage_permissions(request):
     if not _require_perm_manage(request):
         return HttpResponseForbidden("You don't have permission to view this page.")
     
     # User = get_user_model()
-    users = User.objects.exclude(role="system_admin").order_by('id')
+    users = User.objects.exclude(role="system_admin").exclude(is_superuser=True).order_by("id")
     return render(request, 'maps_app/manage_permissions.html', {'users': users})
 
 @require_POST
